@@ -1,6 +1,7 @@
 package de.jowo.pspac.remote;
 
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
@@ -10,5 +11,5 @@ public interface ProgressMonitor extends Remote {
 	 *
 	 * @param progressInfo the progress info
 	 */
-	public void reportProgress(ProgressInfo progressInfo);
+	public void reportProgress(ProgressInfo progressInfo) throws RemoteException;
 }

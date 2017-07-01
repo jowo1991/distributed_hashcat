@@ -3,12 +3,16 @@
  */
 package de.jowo.pspac;
 
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 
@@ -72,8 +76,14 @@ public class MainClass {
 		int port = Integer.parseInt(System.getProperty(PROP_MASTER_PORT, MASTER_DEFAULT_PORT));
 		String host = InetAddress.getLocalHost().getHostName();
 
+		// Setup RMI
 		Registry registry = LocateRegistry.createRegistry(port);
 		registry.bind(MASTER_LOOKUP_ALIAS, master);
+
+		// Setup JMX
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+		ObjectName name = new ObjectName("de.jowo.pspac:type=MasterControl");
+		mbs.registerMBean(master, name);
 
 		logger.info(String.format("Master ready at %s:%d", host, port));
 	}

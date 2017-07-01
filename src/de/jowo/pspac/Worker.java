@@ -26,13 +26,15 @@ public class Worker implements WorkerInterface {
 		logger.trace("submitJob(" + job + ")");
 
 		pool.submit(() -> {
-			for (int i = 0; i < 10; i++) {
+			for (int i = 1; i <= 10; i++) {
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(50);
 					logger.info("Progress: i = " + i + " for job = " + job);
 					monitor.reportProgress(new ProgressInfo(i * 10, "i = " + i));
 				} catch (InterruptedException e) {
 					logger.error("Execution was interrupted", e);
+				} catch (RemoteException e) {
+					logger.error("Remote Exception", e);
 				}
 			}
 		});

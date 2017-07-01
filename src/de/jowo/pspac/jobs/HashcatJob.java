@@ -11,6 +11,10 @@ public class HashcatJob implements JobInterface {
 
 	@Override
 	public String toString() {
-		return "HashcatJob [" + mask == null ? "null" : mask + "]";
+		if (mask != null) {
+			return "HashcatJob [" + mask + "]";
+		} else {
+			return "HashcatJob [null]";
+		}
 	}
 }

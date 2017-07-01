@@ -1,16 +1,22 @@
 package de.jowo.pspac.jmx;
 
+import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.List;
-import java.util.Queue;
 
-import de.jowo.pspac.LoggingProgressMonitor;
 import de.jowo.pspac.Master;
 
 /**
  * JMX monitoring interface for the {@link Master}.
  */
 public interface MasterMXBean {
-	public List<LoggingProgressMonitor> getMonitors();
+	public List<String> getMonitors();
 
-	public Queue<String> getMaskRows();
+	public List<String> getMaskRows();
+
+	public String getProgress();
+
+	public double getProgressPercentage();
+
+	public void runJob() throws IOException, RemoteException;
 }

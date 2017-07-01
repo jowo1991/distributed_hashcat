@@ -41,6 +41,10 @@ public class LoggingProgressMonitor implements ProgressMonitor {
 		}
 	}
 
+	public long getWorkerId() {
+		return workerId;
+	}
+
 	public ProgressInfo getLatestInfo() {
 		return latestInfo;
 	}
@@ -51,6 +55,6 @@ public class LoggingProgressMonitor implements ProgressMonitor {
 
 	@Override
 	public String toString() {
-		return "[" + workerFinished + "] latest = '" + latestInfo == null ? "null" : latestInfo + "'";
+		return String.format("[%d] latest = '%s'", workerId, latestInfo == null ? "null" : latestInfo.toString());
 	}
 }

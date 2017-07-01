@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
@@ -21,7 +22,6 @@ import de.jowo.pspac.exceptions.NodeBusyException;
 import de.jowo.pspac.exceptions.RegistrationFailedException;
 import de.jowo.pspac.jmx.MasterMXBean;
 import de.jowo.pspac.jobs.HashcatJob;
-import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.MasterInterface;
 import de.jowo.pspac.remote.WorkerInterface;
 
@@ -36,8 +36,16 @@ public class Master implements MasterInterface, MasterMXBean {
 
 	private boolean acceptWorkers = true;
 
-	private Queue<String> maskfileRows;
+	private Queue<String> maskfileQueue;
 	private List<LoggingProgressMonitor> monitors = Collections.synchronizedList(new ArrayList<>());
+
+	private List<String> maskfileRows;
+
+	private boolean jobRunning = false;
+
+	public Master() throws IOException {
+		readMaskfile();
+	}
 
 	@Override
 	public synchronized long register(WorkerInterface worker) throws RemoteException, RegistrationFailedException {
@@ -50,20 +58,32 @@ public class Master implements MasterInterface, MasterMXBean {
 
 		logger.info(String.format("New worker '%d' registered with the master (%s)", workerId, worker));
 
+		if (jobRunning) {
+			startDispatcherThread(workerId, worker);
+		}
+
 		return workerId;
 	}
 
 	private void readMaskfile() throws IOException {
+		if (System.getProperty("maskfile") == null) {
+			throw new IllegalArgumentException("Missing mandatory parameter 'maskfile'");
+		}
 		Path maskfile = Paths.get(System.getProperty("maskfile"));
 
 		logger.debug("Reading maskfile: " + maskfile);
-		maskfileRows = new LinkedBlockingQueue<>(Files.readAllLines(maskfile));
+
+		maskfileRows = Files.readAllLines(maskfile);
+		maskfileQueue = new LinkedBlockingQueue<>(maskfileRows);
 	}
 
+	@Override
 	public synchronized void runJob() throws IOException, RemoteException {
+		if (jobRunning) {
+			throw new IllegalArgumentException("Job already running");
+		}
 		logger.trace("runJob()");
-
-		readMaskfile();
+		jobRunning = true;
 
 		for (Map.Entry<Long, WorkerInterface> entry : workers.entrySet()) {
 			startDispatcherThread(entry.getKey(), entry.getValue());
@@ -83,16 +103,16 @@ public class Master implements MasterInterface, MasterMXBean {
 
 				String workRow;
 				while (true) {
-					synchronized (maskfileRows) {
-						if (maskfileRows.isEmpty()) {
+					synchronized (maskfileQueue) {
+						if (maskfileQueue.isEmpty()) {
 							break;
 						} else {
-							workRow = maskfileRows.poll();
+							workRow = maskfileQueue.poll();
 						}
 					}
 
 					try {
-						JobInterface job = new HashcatJob(workRow);
+						HashcatJob job = new HashcatJob(workRow);
 						logger.debug("Submitting job '" + job + "' with worker " + workerId);
 						worker.submitJob(job, monitor);
 
@@ -119,12 +139,40 @@ public class Master implements MasterInterface, MasterMXBean {
 	}
 
 	@Override
-	public List<LoggingProgressMonitor> getMonitors() {
-		return monitors;
+	public List<String> getMonitors() {
+		return monitors.stream().map(item -> item.toString()).collect(Collectors.toList());
 	}
 
 	@Override
-	public Queue<String> getMaskRows() {
+	public List<String> getMaskRows() {
 		return maskfileRows;
+	}
+
+	@Override
+	public String getProgress() {
+		if (jobRunning) {
+			int queueSize = maskfileQueue.size();
+			int fileSize = maskfileRows.size();
+
+			// Avoid div by zero
+			if (fileSize == 0) {
+				fileSize = -1;
+			}
+			return String.format("total: %d, processed: %d (%.2f %%)", fileSize, fileSize - queueSize);
+		} else {
+			return "-";
+		}
+	}
+
+	@Override
+	public double getProgressPercentage() {
+		if (jobRunning) {
+			int queueSize = maskfileQueue.size();
+			int fileSize = maskfileRows.size();
+
+			return (fileSize - queueSize) / (double) fileSize * 100;
+		} else {
+			return 0;
+		}
 	}
 }
