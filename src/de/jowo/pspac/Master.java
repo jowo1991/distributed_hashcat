@@ -19,12 +19,16 @@ import org.apache.log4j.Logger;
 
 import de.jowo.pspac.exceptions.NodeBusyException;
 import de.jowo.pspac.exceptions.RegistrationFailedException;
+import de.jowo.pspac.jmx.MasterMXBean;
 import de.jowo.pspac.jobs.HashcatJob;
 import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.MasterInterface;
 import de.jowo.pspac.remote.WorkerInterface;
 
-public class Master implements MasterInterface {
+/**
+ * The implementation of the Master.
+ */
+public class Master implements MasterInterface, MasterMXBean {
 	private static final Logger logger = Logger.getLogger(Master.class);
 
 	private final AtomicLong workerIdCounter = new AtomicLong(0);
@@ -112,5 +116,15 @@ public class Master implements MasterInterface {
 
 		t.setName("Monitor-" + workerId);
 		t.start();
+	}
+
+	@Override
+	public List<LoggingProgressMonitor> getMonitors() {
+		return monitors;
+	}
+
+	@Override
+	public Queue<String> getMaskRows() {
+		return maskfileRows;
 	}
 }
