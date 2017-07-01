@@ -4,6 +4,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 import de.jowo.pspac.exceptions.NodeBusyException;
+import de.jowo.pspac.jobs.JobInterface;
 
 /**
  * The Interface implemented by the <b>worker nodes</b>.<br>
@@ -25,7 +26,7 @@ public interface WorkerInterface extends Remote {
 	 * @throws RemoteException the remote exception
 	 * @throws NodeBusyException the node is busy executing a job that hasn't finished yet
 	 */
-	public JobControl submitJob(ProgressMonitor monitor) throws RemoteException, NodeBusyException;
+	public JobControl submitJob(JobInterface job, ProgressMonitor monitor) throws RemoteException, NodeBusyException;
 
 	/**
 	 * Terminates the worker node.

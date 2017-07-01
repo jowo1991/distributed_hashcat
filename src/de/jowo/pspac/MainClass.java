@@ -8,8 +8,12 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
+
+import de.jowo.pspac.exceptions.RegistrationFailedException;
+import de.jowo.pspac.remote.MasterInterface;
 
 /**
  * Entry point for the computation.<br>
@@ -32,6 +36,8 @@ public class MainClass {
 	public static final String PROP_MASTER_PORT = "masterport";
 	public static final String PROP_MODE = "mode";
 
+	public static final String PROP_MIN_WORKERS = "minWorkers";
+
 	private static enum NodeMode {
 		MASTER, WORKER
 	}
@@ -53,12 +59,15 @@ public class MainClass {
 				break;
 
 			default:
-				throw new IllegalArgumentException("Invalid mode = " + mode);
+				IllegalArgumentException ex = new IllegalArgumentException("Invalid mode = " + mode);
+				logger.fatal("Failed to start node", ex);
+				throw ex;
 		}
 	}
 
 	public static void runMaster() throws Exception {
 		Master master = new Master();
+		UnicastRemoteObject.exportObject(master, 0);
 
 		int port = Integer.parseInt(System.getProperty(PROP_MASTER_PORT, MASTER_DEFAULT_PORT));
 		String host = InetAddress.getLocalHost().getHostName();
@@ -70,21 +79,31 @@ public class MainClass {
 	}
 
 	public static void runWorker() throws RemoteException {
-		String masterhost = System.getProperty(PROP_MASTER_HOST, "invalid-host");
+		String masterhost = System.getProperty(PROP_MASTER_HOST);
+		if (masterhost == null || masterhost.equals("")) {
+			logger.fatal("Can't start worker with no '" + PROP_MASTER_HOST + "' configuration");
+			return;
+		}
+
 		int masterport = Integer.parseInt(System.getProperty(PROP_MASTER_PORT, MASTER_DEFAULT_PORT));
 
 		Registry registry = LocateRegistry.getRegistry(masterhost, masterport);
-		Master master = null;
+		MasterInterface master = null;
 		try {
-			master = (Master) registry.lookup(MASTER_LOOKUP_ALIAS);
+			master = (MasterInterface) registry.lookup(MASTER_LOOKUP_ALIAS);
 		} catch (NotBoundException e) {
 			logger.fatal("Failed to lookup master node. Terminating the worker NOW.", e);
 			return;
 		}
 
-		Worker w = new Worker();
-		long workerId = master.register(w);
-
-		logger.info(String.format("Successfully registerd worker = %d with the master (%s)", workerId, master));
+		Worker worker = new Worker();
+		UnicastRemoteObject.exportObject(worker, 0);
+		long workerId;
+		try {
+			workerId = master.register(worker);
+			logger.info(String.format("Successfully registerd worker = %d with the master (%s)", workerId, master));
+		} catch (RegistrationFailedException e) {
+			logger.fatal("Failed to register node with master", e);
+		}
 	}
 }
