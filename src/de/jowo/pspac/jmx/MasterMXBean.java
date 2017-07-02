@@ -18,5 +18,9 @@ public interface MasterMXBean {
 
 	public double getProgressPercentage();
 
+	public List<String> getWorkers();
+
+	public int getWorkerCount();
+
 	public void runJob() throws IOException, RemoteException;
 }

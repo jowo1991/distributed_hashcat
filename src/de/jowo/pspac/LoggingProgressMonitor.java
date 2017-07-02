@@ -31,13 +31,26 @@ public class LoggingProgressMonitor implements ProgressMonitor {
 	@Override
 	public void reportProgress(ProgressInfo info) {
 		this.latestInfo = info;
-		logger.debug(String.format("[%d] %d %% - %s", workerId, info.getPercentage(), info.getMessage()));
 
-		// If the worker signals 100% progress we signal the work dispatcher to submit more work
-		if (info.getPercentage() == 100) {
-			lock.lock();
-			workerFinished.signal();
-			lock.unlock();
+		switch (info.getStatus()) {
+			case ACTIVE:
+				logger.debug(String.format("[%d] %d %% - %s", workerId, info.getPercentage(), info.getMessage()));
+				break;
+			case ERROR:
+				String msg = "Execution on worker failed with exception";
+				if (info.getMessage() instanceof Exception) {
+					logger.error(msg, (Exception) info.getMessage());
+				} else {
+					logger.error(msg + ": " + info.getMessage());
+				}
+				break;
+			case FINISHED:
+				lock.lock();
+				workerFinished.signal();
+				lock.unlock();
+				break;
+			default:
+				break;
 		}
 	}
 

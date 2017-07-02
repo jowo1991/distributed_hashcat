@@ -30,12 +30,24 @@ public class Worker implements WorkerInterface {
 				try {
 					Thread.sleep(50);
 					logger.info("Progress: i = " + i + " for job = " + job);
-					monitor.reportProgress(new ProgressInfo(i * 10, "i = " + i));
+					monitor.reportProgress(ProgressInfo.active(i * 10, "i = " + i));
 				} catch (InterruptedException e) {
 					logger.error("Execution was interrupted", e);
+					try {
+						logger.info("Informing master about interrupt");
+						monitor.reportProgress(ProgressInfo.exception(e));
+					} catch (RemoteException ex) {
+						logger.error("Inner Remote Exception", e);
+					}
 				} catch (RemoteException e) {
 					logger.error("Remote Exception", e);
 				}
+			}
+
+			try {
+				monitor.reportProgress(ProgressInfo.finished("done"));
+			} catch (RemoteException e) {
+				logger.error("OnSuccess Remote Exception", e);
 			}
 		});
 

@@ -5,6 +5,8 @@ package de.jowo.pspac;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -14,7 +16,10 @@ import java.rmi.server.UnicastRemoteObject;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 
 import de.jowo.pspac.exceptions.RegistrationFailedException;
 import de.jowo.pspac.remote.MasterInterface;
@@ -26,6 +31,7 @@ import de.jowo.pspac.remote.MasterInterface;
  * <li>mode - Either 'master' or 'worker' (DEFAULT = worker)</li>
  * <li>masterhost - Master to register the worker with. Only relevant if mode = 'worker'</li>
  * <li>masterport - The port to connect to the master or setup the master depending on the mode (DEFAULT = 2000)</li>
+ * <li>LOG_DIR - The path for all log files, e.g. "/tmp/pspac_logs" (DEFAULT = java.io.tmpdir)</li>
  * </ul>
  * 
  * @author Jo
@@ -45,6 +51,8 @@ public class MainClass {
 	private static enum NodeMode {
 		MASTER, WORKER
 	}
+
+	private static final String LOG_DIR = System.getProperty("LOG_DIR", System.getProperty("java.io.tmpdir"));
 
 	/**
 	 * @param args
@@ -69,7 +77,22 @@ public class MainClass {
 		}
 	}
 
+	private static void initLogger(Path filePath) {
+		FileAppender fa = new FileAppender();
+		fa.setName("FileLogger");
+		fa.setFile(filePath.toString());
+		fa.setLayout(new PatternLayout("%d %-5p %c{1}:%L - %m%n"));
+		fa.setThreshold(Level.DEBUG);
+		fa.setAppend(true);
+		fa.activateOptions();
+
+		Logger.getRootLogger().addAppender(fa);
+		System.out.println("Appending logger " + fa.getFile());
+	}
+
 	public static void runMaster() throws Exception {
+		initLogger(Paths.get(LOG_DIR, "pspac_master.log"));
+
 		Master master = new Master();
 		UnicastRemoteObject.exportObject(master, 0);
 
@@ -112,6 +135,8 @@ public class MainClass {
 		try {
 			workerId = master.register(worker);
 			logger.info(String.format("Successfully registerd worker = %d with the master (%s)", workerId, master));
+
+			initLogger(Paths.get(LOG_DIR, String.format("pspac_%d.log", workerId)));
 		} catch (RegistrationFailedException e) {
 			logger.fatal("Failed to register node with master", e);
 		}

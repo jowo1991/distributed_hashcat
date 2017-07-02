@@ -47,6 +47,18 @@ public class Master implements MasterInterface, MasterMXBean {
 		readMaskfile();
 	}
 
+	private void readMaskfile() throws IOException {
+		if (System.getProperty("maskfile") == null) {
+			throw new IllegalArgumentException("Missing mandatory parameter 'maskfile'");
+		}
+		Path maskfile = Paths.get(System.getProperty("maskfile"));
+
+		logger.debug("Reading maskfile: " + maskfile);
+
+		maskfileRows = Files.readAllLines(maskfile);
+		maskfileQueue = new LinkedBlockingQueue<>(maskfileRows);
+	}
+
 	@Override
 	public synchronized long register(WorkerInterface worker) throws RemoteException, RegistrationFailedException {
 		if (!acceptWorkers) {
@@ -63,18 +75,6 @@ public class Master implements MasterInterface, MasterMXBean {
 		}
 
 		return workerId;
-	}
-
-	private void readMaskfile() throws IOException {
-		if (System.getProperty("maskfile") == null) {
-			throw new IllegalArgumentException("Missing mandatory parameter 'maskfile'");
-		}
-		Path maskfile = Paths.get(System.getProperty("maskfile"));
-
-		logger.debug("Reading maskfile: " + maskfile);
-
-		maskfileRows = Files.readAllLines(maskfile);
-		maskfileQueue = new LinkedBlockingQueue<>(maskfileRows);
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class Master implements MasterInterface, MasterMXBean {
 			if (fileSize == 0) {
 				fileSize = -1;
 			}
-			return String.format("total: %d, processed: %d (%.2f %%)", fileSize, fileSize - queueSize);
+			return String.format("total: %d, processed: %d", fileSize, fileSize - queueSize);
 		} else {
 			return "-";
 		}
@@ -173,6 +173,22 @@ public class Master implements MasterInterface, MasterMXBean {
 			return (fileSize - queueSize) / (double) fileSize * 100;
 		} else {
 			return 0;
+		}
+	}
+
+	@Override
+	public List<String> getWorkers() {
+		synchronized (workers) {
+			return workers.entrySet().stream().map(e -> {
+				return String.format("%d - %s", e.getKey(), e.getValue().toString());
+			}).collect(Collectors.toList());
+		}
+	}
+
+	@Override
+	public int getWorkerCount() {
+		synchronized (workers) {
+			return workers.size();
 		}
 	}
 }
