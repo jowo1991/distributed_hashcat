@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,9 +43,20 @@ public class Master implements MasterInterface, MasterMXBean {
 	private List<String> maskfileRows;
 
 	private boolean jobRunning = false;
+	private long jobStartTime;
+	private long jobEndTime;
+	/**
+	 * If set to false, {@link #runJob()} will <b>not</b> be called when the first worker calls {@link #register(WorkerInterface)}. <br>
+	 * Defaults to {@code false}.
+	 */
+	private boolean startExecutionManually = false;
 
 	public Master() throws IOException {
 		readMaskfile();
+
+		startExecutionManually = System.getProperty("startmanually") != null;
+
+		logger.info("startExecutionManually = " + startExecutionManually);
 	}
 
 	private void readMaskfile() throws IOException {
@@ -72,18 +84,21 @@ public class Master implements MasterInterface, MasterMXBean {
 
 		if (jobRunning) {
 			startDispatcherThread(workerId, worker);
+		} else if (!jobRunning && !startExecutionManually) {
+			runJob();
 		}
 
 		return workerId;
 	}
 
 	@Override
-	public synchronized void runJob() throws IOException, RemoteException {
+	public synchronized void runJob() throws RemoteException {
 		if (jobRunning) {
 			throw new IllegalArgumentException("Job already running");
 		}
 		logger.trace("runJob()");
 		jobRunning = true;
+		jobStartTime = System.currentTimeMillis();
 
 		for (Map.Entry<Long, WorkerInterface> entry : workers.entrySet()) {
 			startDispatcherThread(entry.getKey(), entry.getValue());
@@ -113,7 +128,7 @@ public class Master implements MasterInterface, MasterMXBean {
 
 					try {
 						HashcatJob job = new HashcatJob(workRow);
-						logger.debug("Submitting job '" + job + "' with worker " + workerId);
+						logger.info("Submitting job '" + job + "' with worker " + workerId);
 						worker.submitJob(job, monitor);
 
 						// Block until monitor signals that the job finished
@@ -127,7 +142,25 @@ public class Master implements MasterInterface, MasterMXBean {
 					}
 				}
 
-				logger.info(String.format("Worker '%d' out of work. Terminating monitoring thread.", workerId));
+				logger.info(String.format("Worker '%d' out of work. Terminating worker and monitoring Thread", workerId));
+
+				try {
+					worker.terminate();
+
+					synchronized (workers) {
+						workers.remove(monitor.getWorkerId());
+					}
+				} catch (RemoteException e) {
+					logger.warn(String.format("Failed to terminate worker '%d'", workerId));
+				}
+
+				if (workers.size() == 0) {
+					jobEndTime = System.currentTimeMillis();
+					String duration = convertSecondToHHMMSSString((jobEndTime - jobStartTime) / 1000);
+					logger.info(String.format("runJob() finished after '%s'. All workers terminated. Shutting down.", duration));
+
+					Runtime.getRuntime().exit(0);
+				}
 			}
 		});
 
@@ -136,6 +169,10 @@ public class Master implements MasterInterface, MasterMXBean {
 
 		t.setName("Monitor-" + workerId);
 		t.start();
+	}
+
+	private String convertSecondToHHMMSSString(long seconds) {
+		return LocalTime.MIN.plusSeconds(seconds).toString();
 	}
 
 	@Override

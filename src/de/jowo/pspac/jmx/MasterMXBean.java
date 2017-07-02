@@ -1,6 +1,5 @@
 package de.jowo.pspac.jmx;
 
-import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.List;
 
@@ -22,5 +21,5 @@ public interface MasterMXBean {
 
 	public int getWorkerCount();
 
-	public void runJob() throws IOException, RemoteException;
+	public void runJob() throws RemoteException;
 }

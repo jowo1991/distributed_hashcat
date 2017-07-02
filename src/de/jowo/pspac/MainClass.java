@@ -78,6 +78,10 @@ public class MainClass {
 	}
 
 	private static void initLogger(Path filePath) {
+		if (filePath.toFile().exists()) {
+			filePath.toFile().delete();
+		}
+
 		FileAppender fa = new FileAppender();
 		fa.setName("FileLogger");
 		fa.setFile(filePath.toString());

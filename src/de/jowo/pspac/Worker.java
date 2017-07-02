@@ -26,9 +26,9 @@ public class Worker implements WorkerInterface {
 		logger.trace("submitJob(" + job + ")");
 
 		pool.submit(() -> {
-			for (int i = 1; i <= 10; i++) {
+			for (int i = 1; i <= 5; i++) {
 				try {
-					Thread.sleep(50);
+					Thread.sleep(100);
 					logger.info("Progress: i = " + i + " for job = " + job);
 					monitor.reportProgress(ProgressInfo.active(i * 10, "i = " + i));
 				} catch (InterruptedException e) {
@@ -56,6 +56,16 @@ public class Worker implements WorkerInterface {
 
 	@Override
 	public void terminate() throws RemoteException {
-		throw new IllegalStateException("Not implemented");
+		logger.info("Master called node to terminate. Terminating.");
+
+		// Shutdown asynchronously to ensure RMI call succeeds.
+		pool.submit(() -> {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// ignored
+			}
+			Runtime.getRuntime().exit(0);
+		});
 	}
 }
