@@ -38,15 +38,11 @@ public class HashcatJob implements JobInterface {
 
 	@Override
 	public String toString() {
-		if (mask != null) {
-			return "HashcatJob [" + mask + "]";
-		} else {
-			return "HashcatJob [null]";
-		}
+		return "HashcatJob [hash=" + hash + ", mask=" + mask + ", args=" + args + "]";
 	}
 
 	public static void main(String[] args) throws Exception {
-		String arg = "-m 0 -a 3 {hash} {mask} -D 2 --potfile-disable --status";
+		String arg = "-m 0 -a 3 {hash} {mask} -D 2 --status-timer 2 --potfile-disable --status";
 		// String hash = "04cf6ab42833951e9f86598d1213ef3e"; // Sstupid
 		String hash = "098f6bcd4621d373cade4e832627b4f6"; // test
 		// String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
@@ -57,6 +53,7 @@ public class HashcatJob implements JobInterface {
 		logger.info("Final result = " + String.valueOf(result));
 	}
 
+	static final Pattern PARSING_START = Pattern.compile("Session\\.*: .*");
 	static final Pattern PROGRESS_PERCENTAGE = Pattern.compile("Progress\\.*: \\d*/\\d* \\((\\d*)");
 	static final Pattern PROGRESS = Pattern.compile("Progress\\.*: (.*)");
 	static final Pattern TIME_STARTED = Pattern.compile("Time.Started\\.*: (.*)");
@@ -97,7 +94,7 @@ public class HashcatJob implements JobInterface {
 		while ((s = stdOut.readLine()) != null) {
 			// System.out.println(s);
 
-			if (s.contains("Session..........:")) {
+			if (PARSING_START.matcher(s).find()) {
 				isParsing = true;
 			}
 			// Detect empty line that terminates values
@@ -145,19 +142,29 @@ public class HashcatJob implements JobInterface {
 
 	@Override
 	public Object call(ProgressMonitor monitor) throws Exception {
-		logger.info("Running: '" + getCommand() + "'");
-		Process process = Runtime.getRuntime().exec(getCommand());
-		BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		logger.info("Executing: '" + getCommand() + "'");
+		final Process process = Runtime.getRuntime().exec(getCommand());
+		final BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-		// read the output from the command
-		HashcatJobResult res;
-		while ((res = parse(stdOut)) != null) {
-			logger.debug("Status: " + res);
-			monitor.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
+		try {
+			// read the output from the command
+			HashcatJobResult res;
+			while ((res = parse(stdOut)) != null) {
+				logger.debug("Status: " + res);
+				monitor.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
+			}
+
+			logger.info("Process terminated: " + process.waitFor());
+
+			return result;
+		} finally {
+			/**
+			 * No matter how we leave this method, the process HAS to be terminated if it still runs!
+			 */
+			if (process != null && process.isAlive()) {
+				logger.warn("Forcibly stopping process");
+				process.destroyForcibly();
+			}
 		}
-
-		logger.info("Process terminated: " + process.waitFor());
-
-		return result;
 	}
 }

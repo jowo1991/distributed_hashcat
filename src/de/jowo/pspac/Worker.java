@@ -26,28 +26,21 @@ public class Worker implements WorkerInterface {
 		logger.trace("submitJob(" + job + ")");
 
 		pool.submit(() -> {
-			for (int i = 1; i <= 5; i++) {
-				try {
-					Thread.sleep(100);
-					logger.info("Progress: i = " + i + " for job = " + job);
-					monitor.reportProgress(ProgressInfo.active(i * 10, "i = " + i));
-				} catch (InterruptedException e) {
-					logger.error("Execution was interrupted", e);
-					try {
-						logger.info("Informing master about interrupt");
-						monitor.reportProgress(ProgressInfo.exception(e));
-					} catch (RemoteException ex) {
-						logger.error("Inner Remote Exception", e);
-					}
-				} catch (RemoteException e) {
-					logger.error("Remote Exception", e);
-				}
-			}
-
 			try {
-				monitor.reportProgress(ProgressInfo.finished("done"));
-			} catch (RemoteException e) {
-				logger.error("OnSuccess Remote Exception", e);
+				Object result = job.call(monitor);
+				ProgressInfo finishedProgress = ProgressInfo.finished(String.valueOf(result));
+
+				try {
+					monitor.reportProgress(finishedProgress);
+				} catch (RemoteException ex) {
+					logger.error("Failed to report finished execution to Master: " + finishedProgress, ex);
+				}
+			} catch (Exception err) {
+				try {
+					monitor.reportProgress(ProgressInfo.exception(err));
+				} catch (RemoteException e) {
+					logger.error("Failed to report Exception to Master", err);
+				}
 			}
 		});
 
