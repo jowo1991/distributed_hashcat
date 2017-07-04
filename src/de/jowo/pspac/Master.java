@@ -51,12 +51,27 @@ public class Master implements MasterInterface, MasterMXBean {
 	 */
 	private boolean startExecutionManually = false;
 
+	private String hashcatArguments;
+	private String hash;
+
 	public Master() throws IOException {
 		readMaskfile();
 
 		startExecutionManually = System.getProperty("startmanually") != null;
+		hashcatArguments = System.getProperty("hashcatargs");
+		hash = System.getProperty("hash");
 
 		logger.info("startExecutionManually = " + startExecutionManually);
+		logger.info("hashcatArguments = " + hashcatArguments);
+		logger.info("hash = " + hash);
+
+		if (hashcatArguments == null) {
+			throw new IllegalStateException("hashcatargs is mandatory.");
+		}
+
+		if (hash == null) {
+			throw new IllegalStateException("hash is mandatory.");
+		}
 	}
 
 	private void readMaskfile() throws IOException {
@@ -116,18 +131,18 @@ public class Master implements MasterInterface, MasterMXBean {
 			@Override
 			public void run() {
 
-				String workRow;
+				String workMask;
 				while (true) {
 					synchronized (maskfileQueue) {
 						if (maskfileQueue.isEmpty()) {
 							break;
 						} else {
-							workRow = maskfileQueue.poll();
+							workMask = maskfileQueue.poll();
 						}
 					}
 
 					try {
-						HashcatJob job = new HashcatJob(workRow);
+						HashcatJob job = new HashcatJob(hash, workMask, hashcatArguments);
 						logger.info("Submitting job '" + job + "' with worker " + workerId);
 						worker.submitJob(job, monitor);
 
