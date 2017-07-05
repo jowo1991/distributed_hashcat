@@ -207,13 +207,13 @@ public class Master implements MasterInterface, MasterMXBean {
 					String maskProgress = String.format("(%d / %d)", workMaskIndex, maskfileRows.size());
 					// We found the final result!
 					if (jobResult != null) {
-						logger.info(String.format("Finished mask '%s' %s with with match: %s", workMask, maskProgress, jobResult));
+						logger.info(String.format("Finished mask '%s' %s with with match on '%d': %s", workMask, maskProgress, workerId, jobResult));
 						finalResult = jobResult;
 
 						interruptOtherWorkers();
 						break;
 					} else {
-						logger.info(String.format("Finished mask '%s' %s without match", workMask, maskProgress));
+						logger.info(String.format("Finished mask '%s' %s without match on '%d'", workMask, maskProgress, workerId));
 					}
 
 				} catch (RemoteException | NodeBusyException | IllegalStateException e) {

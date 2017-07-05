@@ -47,7 +47,7 @@ public class Worker implements WorkerInterface {
 				try {
 					monitor.reportProgress(finishedProgress);
 				} catch (RemoteException ex) {
-					logger.error("Failed to report finished execution to Master: " + finishedProgress, ex);
+					logger.error("Failed to report finished execution to Master: " + finishedProgress);
 				}
 			} catch (Exception err) {
 				logger.error("Job execution failed", err);
@@ -69,7 +69,7 @@ public class Worker implements WorkerInterface {
 		long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
 		logger.info("Total worker runtime: " + Utils.convertMilliSecondToHHMMSSString(uptime));
 		logger.info("#submitJob = " + jobCounter.get());
-		logger.info("#totalJobDuration = " + totalJobDuration.get());
+		logger.info("#totalJobDuration = " + Utils.convertMilliSecondToHHMMSSString(totalJobDuration.get()));
 
 		// Shutdown asynchronously to ensure RMI call succeeds.
 		pool.submit(() -> {
