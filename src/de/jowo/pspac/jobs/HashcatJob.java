@@ -3,6 +3,7 @@ package de.jowo.pspac.jobs;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,16 +23,34 @@ public class HashcatJob implements JobInterface {
 
 	String result;
 
-	public HashcatJob(String hash, String mask, String args) {
+	/**
+	 * Instantiates a new hashcat job.
+	 *
+	 * @param hash the hash
+	 * @param mask the mask, e.g. ?l?l?l
+	 * @param args the args that <b>must</b> contain the placeholders '{mask}' and '{hash}'.
+	 * @throws IllegalArgumentException the illegal argument exception
+	 */
+	public HashcatJob(String hash, String mask, String args) throws IllegalArgumentException {
 		this.hash = hash;
 		this.mask = mask;
-		this.args = args;
+		this.args = validateArgsOrThrow(args);
+	}
+
+	public static String validateArgsOrThrow(String args) {
+		if (!args.contains("{mask}") || !args.contains("{hash}")) {
+			throw new IllegalArgumentException("Invalid arguments. Must contain {mask} and {hash}");
+		}
+
+		return args;
 	}
 
 	private String getCommand() {
-		String command = "{cmd} {arguments}";
-		command = command.replace("{cmd}", "G:/Studium_Master/Sem_2_SS17/PS-PAC/Project/hashcat-3.5.0/hashcat64.exe");
-		command = command.replace("{arguments}", args.replace("{mask}", mask).replace("{hash}", hash));
+		String arguments = args.replace("{mask}", mask).replace("{hash}", hash);
+
+		String command = "{cmd} {arguments} --status --status-timer 2 --potfile-disable";
+		command = command.replace("{cmd}", System.getProperty("hashcat", "hashcat64"));
+		command = command.replace("{arguments}", arguments);
 
 		return command;
 	}
@@ -42,7 +61,7 @@ public class HashcatJob implements JobInterface {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String arg = "-m 0 -a 3 {hash} {mask} -D 2 --status-timer 2 --potfile-disable --status";
+		String arg = "-m 0 -a 3 {hash} {mask} -D 2";
 		// String hash = "04cf6ab42833951e9f86598d1213ef3e"; // Sstupid
 		String hash = "098f6bcd4621d373cade4e832627b4f6"; // test
 		// String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
@@ -145,7 +164,7 @@ public class HashcatJob implements JobInterface {
 	}
 
 	@Override
-	public Object call(ProgressMonitor monitor) throws Exception {
+	public Serializable call(ProgressMonitor monitor) throws Exception {
 		logger.info("Executing: '" + getCommand() + "'");
 		final Process process = Runtime.getRuntime().exec(getCommand());
 		final BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));

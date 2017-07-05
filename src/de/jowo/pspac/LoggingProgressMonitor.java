@@ -33,16 +33,9 @@ public class LoggingProgressMonitor implements ProgressMonitor {
 	public void reportProgress(ProgressInfo info) {
 		this.latestInfo = info;
 
-		String msg = "Execution on worker failed";
 		switch (info.getStatus()) {
 			case EXCEPTION:
-				logger.error(msg, (Exception) info.getMessage());
-				signalWorkFinished();
-				break;
 			case ERROR:
-				logger.error(msg + ": " + info.getMessage());
-				signalWorkFinished();
-				break;
 			case FINISHED:
 				signalWorkFinished();
 				break;

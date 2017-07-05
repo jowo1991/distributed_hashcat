@@ -1,5 +1,6 @@
 package de.jowo.pspac;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,15 +28,16 @@ public class Worker implements WorkerInterface {
 
 		pool.submit(() -> {
 			try {
-				Object result = job.call(monitor);
+				Serializable result = job.call(monitor);
 
-				ProgressInfo finishedProgress = ProgressInfo.finished(String.valueOf(result));
+				ProgressInfo finishedProgress = ProgressInfo.finished(result);
 				try {
 					monitor.reportProgress(finishedProgress);
 				} catch (RemoteException ex) {
 					logger.error("Failed to report finished execution to Master: " + finishedProgress, ex);
 				}
 			} catch (Exception err) {
+				logger.error("Job execution failed", err);
 				try {
 					monitor.reportProgress(ProgressInfo.exception(err));
 				} catch (RemoteException e) {

@@ -76,6 +76,8 @@ public class Master implements MasterInterface, MasterMXBean {
 		if (hash == null) {
 			throw new IllegalStateException("hash is mandatory.");
 		}
+
+		HashcatJob.validateArgsOrThrow(hashcatArguments);
 	}
 
 	private void readMaskfile() throws IOException {
@@ -88,6 +90,8 @@ public class Master implements MasterInterface, MasterMXBean {
 
 		maskfileRows = Files.readAllLines(maskfile);
 		maskfileQueue = new LinkedBlockingQueue<>(maskfileRows);
+
+		logger.info("Using maskfile with " + maskfileRows.size() + " rows");
 	}
 
 	@Override
@@ -111,7 +115,7 @@ public class Master implements MasterInterface, MasterMXBean {
 	}
 
 	@Override
-	public synchronized void runJob() throws RemoteException {
+	public synchronized void runJob() throws RemoteException, IllegalArgumentException {
 		if (jobRunning) {
 			throw new IllegalArgumentException("Job already running");
 		}
@@ -124,6 +128,19 @@ public class Master implements MasterInterface, MasterMXBean {
 		}
 
 		logger.trace("Finished 'runJob()'. Currently active monitors: " + monitors.size());
+	}
+
+	private void startDispatcherThread(final long workerId, final WorkerInterface worker) throws RemoteException {
+		final LoggingProgressMonitor monitor = new LoggingProgressMonitor(workerId);
+		UnicastRemoteObject.exportObject(monitor, 0);
+
+		// Create Monitoring-Thread
+		final Thread t = new MonitorThread(workerId, monitor, worker);
+
+		monitor.setThread(t);
+		monitors.add(monitor);
+
+		t.start();
 	}
 
 	private void interruptOtherWorkers() {
@@ -150,7 +167,7 @@ public class Master implements MasterInterface, MasterMXBean {
 			this.worker = worker;
 		}
 
-		private Serializable getJobResult(ProgressInfo info) {
+		private Serializable getJobResult(ProgressInfo info) throws IllegalStateException {
 			switch (info.getStatus()) {
 				case ERROR:
 					throw new IllegalStateException(info.getMessage().toString());
@@ -167,6 +184,8 @@ public class Master implements MasterInterface, MasterMXBean {
 		@Override
 		public void run() {
 			String workMask;
+			boolean hasError = false;
+
 			while (true) {
 				synchronized (maskfileQueue) {
 					if (maskfileQueue.isEmpty()) {
@@ -186,15 +205,22 @@ public class Master implements MasterInterface, MasterMXBean {
 
 					// We found the final result!
 					if (jobResult != null) {
-						logger.info("Final result found: " + jobResult);
+						logger.info(String.format("Finished mask '%s' with with match: %s", workMask, jobResult));
 						finalResult = jobResult;
 
 						interruptOtherWorkers();
 						break;
+					} else {
+						logger.info(String.format("Finished mask '%s' without match", workMask));
 					}
 
-				} catch (RemoteException | NodeBusyException e) {
-					logger.error("Error while executing Job on worker '" + workerId + "'. Stopped execution on that worker", e);
+				} catch (RemoteException | NodeBusyException | IllegalStateException e) {
+					hasError = true;
+					logger.error(String.format("Error while processing mask '%s' on worker '%d'. Stopped execution on that worker", workMask, workerId), e);
+					// re-submit mask into queue so another worker can process it
+					synchronized (maskfileQueue) {
+						maskfileQueue.add(workMask);
+					}
 					break;
 				} catch (InterruptedException e) {
 					// Only reason for interrupt is that another worker found the final result
@@ -204,7 +230,11 @@ public class Master implements MasterInterface, MasterMXBean {
 				}
 			}
 
-			logger.info(String.format("Worker '%d' out of work. Terminating worker and monitoring Thread", workerId));
+			if (hasError) {
+				logger.info(String.format("Stopping worker '%d' and monitoring Thread because of an error", workerId));
+			} else {
+				logger.info(String.format("Worker '%d' out of work. Terminating worker and monitoring Thread", workerId));
+			}
 
 			try {
 				worker.terminate();
@@ -222,24 +252,12 @@ public class Master implements MasterInterface, MasterMXBean {
 					String duration = convertSecondToHHMMSSString((jobEndTime - jobStartTime) / 1000);
 					logger.info(String.format("runJob() finished after '%s'. All workers terminated. Shutting down.", duration));
 					logger.info(String.format("jobResult = '%s'", finalResult));
+					logger.info(String.format("remaining masks = '%d'", maskfileQueue.size()));
 
 					Runtime.getRuntime().exit(0);
 				}
 			}
 		}
-	}
-
-	private void startDispatcherThread(final long workerId, final WorkerInterface worker) throws RemoteException {
-		final LoggingProgressMonitor monitor = new LoggingProgressMonitor(workerId);
-		UnicastRemoteObject.exportObject(monitor, 0);
-
-		// Create Monitoring-Thread
-		final Thread t = new MonitorThread(workerId, monitor, worker);
-
-		monitor.setThread(t);
-		monitors.add(monitor);
-
-		t.start();
 	}
 
 	private String convertSecondToHHMMSSString(long seconds) {

@@ -14,5 +14,5 @@ public interface JobInterface extends Serializable {
 	 * @return {@code null} to indicate the final result was <b>not</b> found, {@code true} / {@code Object} otherwise.
 	 * @throws Exception
 	 */
-	public Object call(ProgressMonitor monitor) throws Exception;
+	public Serializable call(ProgressMonitor monitor) throws Exception;
 }
