@@ -17,6 +17,7 @@ public class DemoJob implements JobInterface {
 			monitor.reportProgress(ProgressInfo.active(i * 10, "i = " + i));
 		}
 
-		return true;
+		// There is no "final" result, so always return false.
+		return false;
 	}
 }

@@ -61,6 +61,8 @@ public class HashcatJob implements JobInterface {
 	static final Pattern SPEED_DEV = Pattern.compile("Speed.Dev.#.\\.*: *(\\d+.*)");
 
 	/**
+	 * Parses the following text to provide {@link HashcatJobResult}s for the master.
+	 * 
 	 * <pre>
 	 * 	Session..........: hashcat
 	 * 	Status...........: Quit
@@ -78,9 +80,11 @@ public class HashcatJob implements JobInterface {
 	 * 	Candidates.#3....: XFFDAZGU -> KWINYQWW
 	 * 	HWMon.Dev.#3.....: Temp: 69c
 	 * </pre>
+	 * 
+	 * Also, whenever the {@link #hash} is seen in the stdout we expect to have broken the hash and set the {@link #result} appropriately.
 	 *
 	 * @param stdOut reader to access the stdout of the process
-	 * @return the hashcat job result
+	 * @return the hashcat job result or {@code null} when EOF was reached.
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private HashcatJobResult parse(BufferedReader stdOut) throws IOException {
@@ -92,7 +96,7 @@ public class HashcatJob implements JobInterface {
 		Pattern resultPattern = Pattern.compile(hash + ":(.*)");
 
 		while ((s = stdOut.readLine()) != null) {
-			// System.out.println(s);
+			logger.trace(s);
 
 			if (PARSING_START.matcher(s).find()) {
 				isParsing = true;
@@ -162,7 +166,7 @@ public class HashcatJob implements JobInterface {
 			 * No matter how we leave this method, the process HAS to be terminated if it still runs!
 			 */
 			if (process != null && process.isAlive()) {
-				logger.warn("Forcibly stopping process");
+				logger.warn("Forcibly stopping hashcat process");
 				process.destroyForcibly();
 			}
 		}

@@ -28,8 +28,8 @@ public class Worker implements WorkerInterface {
 		pool.submit(() -> {
 			try {
 				Object result = job.call(monitor);
-				ProgressInfo finishedProgress = ProgressInfo.finished(String.valueOf(result));
 
+				ProgressInfo finishedProgress = ProgressInfo.finished(String.valueOf(result));
 				try {
 					monitor.reportProgress(finishedProgress);
 				} catch (RemoteException ex) {
