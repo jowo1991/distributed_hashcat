@@ -37,7 +37,7 @@ import de.jowo.pspac.remote.MasterInterface;
  * Only for the master:
  * <ul>
  * <li>hash - The hash to be broken, e.g. "098f6bcd4621d373cade4e832627b4f6" - <b>mandatory</b></li>
- * <li>hashcatargs - The arguments to pass to hashcat, e.g. -m 0 -a 3 {hash} {mask} -D 2" - <b>mandatory</b></li>
+ * <li>hashcatargs - The arguments to pass to hashcat, e.g. "-m 0 -a 3 {hash} {mask} -D 2" - <b>mandatory</b></li>
  * </ul>
  * 
  * @author Jo

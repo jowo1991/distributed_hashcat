@@ -184,6 +184,7 @@ public class Master implements MasterInterface, MasterMXBean {
 		@Override
 		public void run() {
 			String workMask;
+			int workMaskIndex;
 			boolean hasError = false;
 
 			while (true) {
@@ -191,6 +192,7 @@ public class Master implements MasterInterface, MasterMXBean {
 					if (maskfileQueue.isEmpty()) {
 						break;
 					} else {
+						workMaskIndex = maskfileRows.size() - maskfileQueue.size() + 1;
 						workMask = maskfileQueue.poll();
 					}
 				}
@@ -203,15 +205,16 @@ public class Master implements MasterInterface, MasterMXBean {
 					ProgressInfo lastProgress = monitor.waitForWorker();
 					Serializable jobResult = getJobResult(lastProgress);
 
+					String maskProgress = String.format("(%d / %d)", workMaskIndex, maskfileRows.size());
 					// We found the final result!
 					if (jobResult != null) {
-						logger.info(String.format("Finished mask '%s' with with match: %s", workMask, jobResult));
+						logger.info(String.format("Finished mask '%s' %s with with match: %s", workMask, maskProgress, jobResult));
 						finalResult = jobResult;
 
 						interruptOtherWorkers();
 						break;
 					} else {
-						logger.info(String.format("Finished mask '%s' without match", workMask));
+						logger.info(String.format("Finished mask '%s' %s without match", workMask, maskProgress));
 					}
 
 				} catch (RemoteException | NodeBusyException | IllegalStateException e) {
