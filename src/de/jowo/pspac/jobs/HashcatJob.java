@@ -57,7 +57,7 @@ public class HashcatJob implements JobInterface {
 
 	@Override
 	public String toString() {
-		return "HashcatJob [hash=" + hash + ", mask=" + mask + ", args=" + args + "]";
+		return "HashcatJob [hash=" + hash + ", mask=" + mask + "]";
 	}
 
 	public static void main(String[] args) throws Exception {
