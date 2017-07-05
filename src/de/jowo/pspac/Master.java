@@ -1,6 +1,7 @@
 package de.jowo.pspac;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,7 @@ import de.jowo.pspac.jmx.MasterMXBean;
 import de.jowo.pspac.jobs.HashcatJob;
 import de.jowo.pspac.remote.MasterInterface;
 import de.jowo.pspac.remote.WorkerInterface;
+import de.jowo.pspac.remote.dto.ProgressInfo;
 
 /**
  * The implementation of the Master.
@@ -53,6 +55,8 @@ public class Master implements MasterInterface, MasterMXBean {
 
 	private String hashcatArguments;
 	private String hash;
+
+	private Serializable finalResult;
 
 	public Master() throws IOException {
 		readMaskfile();
@@ -122,6 +126,16 @@ public class Master implements MasterInterface, MasterMXBean {
 		logger.trace("Finished 'runJob()'. Currently active monitors: " + monitors.size());
 	}
 
+	private void interruptOtherWorkers() {
+		synchronized (monitors) {
+			for (LoggingProgressMonitor monitor : monitors) {
+				if (monitor.getThread() != Thread.currentThread()) {
+					monitor.getThread().interrupt();
+				}
+			}
+		}
+	}
+
 	private class MonitorThread extends Thread {
 
 		final LoggingProgressMonitor monitor;
@@ -134,6 +148,20 @@ public class Master implements MasterInterface, MasterMXBean {
 			this.monitor = monitor;
 			this.workerId = workerId;
 			this.worker = worker;
+		}
+
+		private Serializable getJobResult(ProgressInfo info) {
+			switch (info.getStatus()) {
+				case ERROR:
+					throw new IllegalStateException(info.getMessage().toString());
+				case EXCEPTION:
+					throw new IllegalStateException((Exception) info.getMessage());
+				case FINISHED:
+					return info.getMessage();
+				case ACTIVE:
+				default:
+					throw new IllegalStateException("Unexpected status of jobResult");
+			}
 		}
 
 		@Override
@@ -153,13 +181,25 @@ public class Master implements MasterInterface, MasterMXBean {
 					logger.info("Submitting job '" + job + "' with worker " + workerId);
 					worker.submitJob(job, monitor);
 
-					// Block until monitor signals that the job finished
-					monitor.lock.lock();
-					monitor.workerFinished.await();
-					monitor.lock.unlock();
+					ProgressInfo lastProgress = monitor.waitForWorker();
+					Serializable jobResult = getJobResult(lastProgress);
 
-				} catch (InterruptedException | RemoteException | NodeBusyException e) {
+					// We found the final result!
+					if (jobResult != null) {
+						logger.info("Final result found: " + jobResult);
+						finalResult = jobResult;
+
+						interruptOtherWorkers();
+						break;
+					}
+
+				} catch (RemoteException | NodeBusyException e) {
 					logger.error("Error while executing Job on worker '" + workerId + "'. Stopped execution on that worker", e);
+					break;
+				} catch (InterruptedException e) {
+					// Only reason for interrupt is that another worker found the final result
+					// -> silently terminate
+					logger.debug(String.format("Thread '%s' interrupted. Probably final result (=%s) found.", Thread.currentThread().getName(), finalResult));
 					break;
 				}
 			}
@@ -176,12 +216,15 @@ public class Master implements MasterInterface, MasterMXBean {
 				logger.warn(String.format("Failed to terminate worker '%d'", workerId));
 			}
 
-			if (workers.size() == 0) {
-				jobEndTime = System.currentTimeMillis();
-				String duration = convertSecondToHHMMSSString((jobEndTime - jobStartTime) / 1000);
-				logger.info(String.format("runJob() finished after '%s'. All workers terminated. Shutting down.", duration));
+			synchronized (workers) {
+				if (workers.size() == 0) {
+					jobEndTime = System.currentTimeMillis();
+					String duration = convertSecondToHHMMSSString((jobEndTime - jobStartTime) / 1000);
+					logger.info(String.format("runJob() finished after '%s'. All workers terminated. Shutting down.", duration));
+					logger.info(String.format("jobResult = '%s'", finalResult));
 
-				Runtime.getRuntime().exit(0);
+					Runtime.getRuntime().exit(0);
+				}
 			}
 		}
 	}

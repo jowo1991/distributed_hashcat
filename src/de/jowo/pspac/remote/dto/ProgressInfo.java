@@ -13,19 +13,19 @@ public class ProgressInfo implements Serializable {
 		return new ProgressInfo(ProgressStatus.ACTIVE, percentage, message);
 	}
 
-	public static ProgressInfo error(String message) {
+	public static ProgressInfo error(Serializable message) {
 		return new ProgressInfo(ProgressStatus.ERROR, -1, message);
 	}
 
 	public static ProgressInfo exception(Exception ex) {
-		return new ProgressInfo(ProgressStatus.ERROR, -1, "Excepion on worker: " + ex.getMessage());
+		return new ProgressInfo(ProgressStatus.EXCEPTION, -1, ex);
 	}
 
-	public static ProgressInfo finished(String result) {
+	public static ProgressInfo finished(Serializable result) {
 		return new ProgressInfo(ProgressStatus.FINISHED, -1, result);
 	}
 
-	private ProgressInfo(ProgressStatus status, int percentage, String message) {
+	private ProgressInfo(ProgressStatus status, int percentage, Serializable message) {
 		this.percentage = percentage;
 		this.message = message;
 		this.status = status;

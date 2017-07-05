@@ -8,12 +8,13 @@ import org.apache.log4j.Logger;
 
 import de.jowo.pspac.remote.ProgressMonitor;
 import de.jowo.pspac.remote.dto.ProgressInfo;
+import de.jowo.pspac.remote.dto.ProgressStatus;
 
 public class LoggingProgressMonitor implements ProgressMonitor {
 	private static final Logger logger = Logger.getLogger(LoggingProgressMonitor.class);
 
-	final Lock lock = new ReentrantLock();
-	final Condition workerFinished = lock.newCondition();
+	private final Lock lock = new ReentrantLock();
+	private final Condition workerFinished = lock.newCondition();
 
 	private final long workerId;
 	private Thread thread;
@@ -32,26 +33,45 @@ public class LoggingProgressMonitor implements ProgressMonitor {
 	public void reportProgress(ProgressInfo info) {
 		this.latestInfo = info;
 
+		String msg = "Execution on worker failed";
 		switch (info.getStatus()) {
+			case EXCEPTION:
+				logger.error(msg, (Exception) info.getMessage());
+				signalWorkFinished();
+				break;
+			case ERROR:
+				logger.error(msg + ": " + info.getMessage());
+				signalWorkFinished();
+				break;
+			case FINISHED:
+				signalWorkFinished();
+				break;
+			default:
 			case ACTIVE:
 				logger.debug(String.format("[%d] %d %% - %s", workerId, info.getPercentage(), info.getMessage()));
 				break;
-			case ERROR:
-				String msg = "Execution on worker failed with exception";
-				if (info.getMessage() instanceof Exception) {
-					logger.error(msg, (Exception) info.getMessage());
-				} else {
-					logger.error(msg + ": " + info.getMessage());
-				}
-				break;
-			case FINISHED:
-				lock.lock();
-				workerFinished.signal();
-				lock.unlock();
-				break;
-			default:
-				break;
 		}
+	}
+
+	private void signalWorkFinished() {
+		lock.lock();
+		workerFinished.signal();
+		lock.unlock();
+	}
+
+	/**
+	 * Block until the job finished.
+	 *
+	 * @return Last progress reported by the worker. <br>
+	 *         The {@link ProgressInfo#getStatus()} is {@link ProgressStatus#FINISHED} unless an error occurred.
+	 * @throws InterruptedException the interrupted exception
+	 */
+	public ProgressInfo waitForWorker() throws InterruptedException {
+		lock.lock();
+		workerFinished.await();
+		lock.unlock();
+
+		return latestInfo;
 	}
 
 	public long getWorkerId() {
