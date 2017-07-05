@@ -145,6 +145,7 @@ public class MainClass {
 		long workerId;
 		try {
 			workerId = master.register(worker);
+			worker.setWorkerId(workerId);
 			logger.info(String.format("Successfully registerd worker = %d with the master (%s)", workerId, master));
 
 			initLogger(Paths.get(LOG_DIR, String.format("pspac_%d.log", workerId)));

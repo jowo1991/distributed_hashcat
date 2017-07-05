@@ -24,6 +24,8 @@ public class Worker implements WorkerInterface {
 
 	final ExecutorService pool = Executors.newFixedThreadPool(1);
 
+	private long workerId;
+
 	final AtomicLong jobCounter = new AtomicLong();
 	final AtomicLong totalJobDuration = new AtomicLong();
 
@@ -67,7 +69,8 @@ public class Worker implements WorkerInterface {
 		logger.info("Master called node to terminate. Terminating.");
 
 		long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
-		logger.info("Total worker runtime: " + Utils.convertMilliSecondToHHMMSSString(uptime));
+		logger.info("#id = " + workerId);
+		logger.info("#Total worker runtime: " + Utils.convertMilliSecondToHHMMSSString(uptime));
 		logger.info("#submitJob = " + jobCounter.get());
 		logger.info("#totalJobDuration = " + Utils.convertMilliSecondToHHMMSSString(totalJobDuration.get()));
 
@@ -80,5 +83,9 @@ public class Worker implements WorkerInterface {
 			}
 			Runtime.getRuntime().exit(0);
 		});
+	}
+
+	public void setWorkerId(long workerId) {
+		this.workerId = workerId;
 	}
 }
