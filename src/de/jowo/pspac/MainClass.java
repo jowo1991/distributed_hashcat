@@ -5,6 +5,7 @@ package de.jowo.pspac;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.NotBoundException;
@@ -121,7 +122,7 @@ public class MainClass {
 		logger.info(String.format("Master ready at %s:%d", host, port));
 	}
 
-	public static void runWorker() throws RemoteException {
+	public static void runWorker() throws RemoteException, UnknownHostException {
 		String masterhost = System.getProperty(PROP_MASTER_HOST);
 		if (masterhost == null || masterhost.equals("")) {
 			logger.fatal("Can't start worker with no '" + PROP_MASTER_HOST + "' configuration");
@@ -147,6 +148,8 @@ public class MainClass {
 			logger.info(String.format("Successfully registerd worker = %d with the master (%s)", workerId, master));
 
 			initLogger(Paths.get(LOG_DIR, String.format("pspac_%d.log", workerId)));
+
+			logger.info(String.format("Worker started up on host '%s'", InetAddress.getLocalHost().getHostName()));
 		} catch (RegistrationFailedException e) {
 			logger.fatal("Failed to register node with master", e);
 		}
