@@ -177,7 +177,12 @@ public class HashcatJob implements JobInterface {
 				monitor.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
 			}
 
-			logger.info("Process terminated: " + process.waitFor());
+			int code = process.waitFor();
+			logger.info("Process terminated: " + code);
+
+			if (code < 0 || code > 1) {
+				throw new IllegalStateException("Illegal exit code: " + code);
+			}
 
 			return result;
 		} finally {
