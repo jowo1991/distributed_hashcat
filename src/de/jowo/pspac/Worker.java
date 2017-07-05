@@ -1,9 +1,11 @@
 package de.jowo.pspac;
 
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.rmi.RemoteException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
@@ -22,13 +24,24 @@ public class Worker implements WorkerInterface {
 
 	final ExecutorService pool = Executors.newFixedThreadPool(1);
 
+	final AtomicLong jobCounter = new AtomicLong();
+	final AtomicLong totalJobDuration = new AtomicLong();
+
 	@Override
 	public JobControl submitJob(JobInterface job, ProgressMonitor monitor) throws RemoteException, NodeBusyException {
-		logger.trace("submitJob(" + job + ")");
+		logger.debug("submitJob(" + job + ")");
+
+		jobCounter.incrementAndGet();
 
 		pool.submit(() -> {
 			try {
+				long start = System.currentTimeMillis();
 				Serializable result = job.call(monitor);
+				long end = System.currentTimeMillis();
+				long duration = end - start;
+
+				totalJobDuration.addAndGet(duration);
+				logger.info(String.format("Finished job '%s' in '%d ms'", job, duration));
 
 				ProgressInfo finishedProgress = ProgressInfo.finished(result);
 				try {
@@ -52,6 +65,11 @@ public class Worker implements WorkerInterface {
 	@Override
 	public void terminate() throws RemoteException {
 		logger.info("Master called node to terminate. Terminating.");
+
+		long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
+		logger.info("Total worker runtime: " + Utils.convertMilliSecondToHHMMSSString(uptime));
+		logger.info("#submitJob = " + jobCounter.get());
+		logger.info("#totalJobDuration = " + totalJobDuration.get());
 
 		// Shutdown asynchronously to ensure RMI call succeeds.
 		pool.submit(() -> {

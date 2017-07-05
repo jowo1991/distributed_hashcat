@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -252,7 +251,7 @@ public class Master implements MasterInterface, MasterMXBean {
 			synchronized (workers) {
 				if (workers.size() == 0) {
 					jobEndTime = System.currentTimeMillis();
-					String duration = convertSecondToHHMMSSString((jobEndTime - jobStartTime) / 1000);
+					String duration = Utils.convertMilliSecondToHHMMSSString(jobEndTime - jobStartTime);
 					logger.info(String.format("runJob() finished after '%s'. All workers terminated. Shutting down.", duration));
 					logger.info(String.format("jobResult = '%s'", finalResult));
 					logger.info(String.format("remaining masks = '%d'", maskfileQueue.size()));
@@ -261,10 +260,6 @@ public class Master implements MasterInterface, MasterMXBean {
 				}
 			}
 		}
-	}
-
-	private String convertSecondToHHMMSSString(long seconds) {
-		return LocalTime.MIN.plusSeconds(seconds).toString();
 	}
 
 	@Override
