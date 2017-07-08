@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -80,7 +81,7 @@ public class HashcatJob implements JobInterface {
 	static final Pattern SPEED_DEV = Pattern.compile("Speed.Dev.#.\\.*: *(\\d+.*)");
 
 	/**
-	 * Parses the following text to provide {@link HashcatJobResult}s for the master.
+	 * Parses the following text to provide {@link HashcatJobStatus}s for the master.
 	 * 
 	 * <pre>
 	 * 	Session..........: hashcat
@@ -106,8 +107,8 @@ public class HashcatJob implements JobInterface {
 	 * @return the hashcat job result or {@code null} when EOF was reached.
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private HashcatJobResult parse(BufferedReader stdOut) throws IOException {
-		HashcatJobResult res = new HashcatJobResult();
+	private HashcatJobStatus parse(BufferedReader stdOut) throws IOException {
+		HashcatJobStatus res = new HashcatJobStatus();
 		String s;
 		Matcher matcher;
 		boolean isParsing = false;
@@ -171,7 +172,7 @@ public class HashcatJob implements JobInterface {
 
 		try {
 			// read the output from the command
-			HashcatJobResult res;
+			HashcatJobStatus res;
 			while ((res = parse(stdOut)) != null) {
 				logger.debug("Status: " + res);
 				monitor.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
@@ -194,5 +195,10 @@ public class HashcatJob implements JobInterface {
 				process.destroyForcibly();
 			}
 		}
+	}
+
+	@Override
+	public Iterable<String> getMasks() {
+		return Arrays.asList(mask);
 	}
 }

@@ -1,6 +1,6 @@
 package de.jowo.pspac.jobs;
 
-public class HashcatJobResult {
+public class HashcatJobStatus {
 	private String progress;
 	private String timeStarted;
 	private String timeEstimated;

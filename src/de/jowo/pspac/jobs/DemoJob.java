@@ -1,6 +1,7 @@
 package de.jowo.pspac.jobs;
 
 import java.io.Serializable;
+import java.util.Collections;
 
 import org.apache.log4j.Logger;
 
@@ -21,5 +22,10 @@ public class DemoJob implements JobInterface {
 
 		// There is no "final" result, so always return null.
 		return null;
+	}
+
+	@Override
+	public Iterable<String> getMasks() {
+		return Collections.emptyList();
 	}
 }

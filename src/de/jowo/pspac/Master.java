@@ -22,7 +22,7 @@ import org.apache.log4j.Logger;
 import de.jowo.pspac.exceptions.NodeBusyException;
 import de.jowo.pspac.exceptions.RegistrationFailedException;
 import de.jowo.pspac.jmx.MasterMXBean;
-import de.jowo.pspac.jobs.HashcatJob;
+import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.MasterInterface;
 import de.jowo.pspac.remote.WorkerInterface;
 import de.jowo.pspac.remote.dto.ProgressInfo;
@@ -52,31 +52,29 @@ public class Master implements MasterInterface, MasterMXBean {
 	 */
 	private boolean startExecutionManually = false;
 
-	private String hashcatArguments;
-	private String hash;
-
 	private Serializable finalResult;
 
-	public Master() throws IOException {
+	private final AbstractFactory factory;
+
+	public Master() throws IOException, IllegalStateException {
 		readMaskfile();
 
+		String factoryClass = System.getProperty("factory");
 		startExecutionManually = System.getProperty("startmanually") != null;
-		hashcatArguments = System.getProperty("hashcatargs");
-		hash = System.getProperty("hash");
 
-		logger.info("startExecutionManually = " + startExecutionManually);
-		logger.info("hashcatArguments = " + hashcatArguments);
-		logger.info("hash = " + hash);
+		if (factoryClass == null || factoryClass.equals("")) {
+			throw new IllegalArgumentException("factory is mandatory");
+		} else {
+			try {
+				factoryClass = "de.jowo.pspac.factories." + factoryClass;
+				factory = (AbstractFactory) Class.forName(factoryClass).newInstance();
+			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+				String error = String.format("Unable to instantiate factory '%s'", factoryClass);
+				logger.fatal(error, e);
 
-		if (hashcatArguments == null) {
-			throw new IllegalStateException("hashcatargs is mandatory.");
+				throw new IllegalStateException(error, e);
+			}
 		}
-
-		if (hash == null) {
-			throw new IllegalStateException("hash is mandatory.");
-		}
-
-		HashcatJob.validateArgsOrThrow(hashcatArguments);
 	}
 
 	private void readMaskfile() throws IOException {
@@ -182,9 +180,9 @@ public class Master implements MasterInterface, MasterMXBean {
 
 		@Override
 		public void run() {
-			String workMask;
 			int workMaskIndex;
 			boolean hasError = false;
+			JobInterface job;
 
 			while (true) {
 				synchronized (maskfileQueue) {
@@ -192,12 +190,11 @@ public class Master implements MasterInterface, MasterMXBean {
 						break;
 					} else {
 						workMaskIndex = maskfileRows.size() - maskfileQueue.size() + 1;
-						workMask = maskfileQueue.poll();
+						job = factory.createJob(maskfileQueue);
 					}
 				}
 
 				try {
-					HashcatJob job = new HashcatJob(hash, workMask, hashcatArguments);
 					logger.info("Submitting job '" + job + "' with worker " + workerId);
 					worker.submitJob(job, monitor);
 
@@ -207,21 +204,23 @@ public class Master implements MasterInterface, MasterMXBean {
 					String maskProgress = String.format("(%d / %d)", workMaskIndex, maskfileRows.size());
 					// We found the final result!
 					if (jobResult != null) {
-						logger.info(String.format("Finished mask '%s' %s with with match on '%d': %s", workMask, maskProgress, workerId, jobResult));
+						logger.info(String.format("[%s] Finished job '%s' with match on '%d': %s", maskProgress, job, workerId, jobResult));
 						finalResult = jobResult;
 
 						interruptOtherWorkers();
 						break;
 					} else {
-						logger.info(String.format("Finished mask '%s' %s without match on '%d'", workMask, maskProgress, workerId));
+						logger.info(String.format("[%s] Finished job '%s' without match on '%d'", maskProgress, job, workerId));
 					}
 
 				} catch (RemoteException | NodeBusyException | IllegalStateException e) {
 					hasError = true;
-					logger.error(String.format("Error while processing mask '%s' on worker '%d'. Stopped execution on that worker", workMask, workerId), e);
+					logger.error(String.format("Error while processing job '%s' on worker '%d'. Stopped execution on that worker", job, workerId), e);
 					// re-submit mask into queue so another worker can process it
 					synchronized (maskfileQueue) {
-						maskfileQueue.add(workMask);
+						for (String mask : job.getMasks()) {
+							maskfileQueue.add(mask);
+						}
 					}
 					break;
 				} catch (InterruptedException e) {

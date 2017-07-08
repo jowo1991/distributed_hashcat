@@ -15,4 +15,11 @@ public interface JobInterface extends Serializable {
 	 * @throws Exception
 	 */
 	public Serializable call(ProgressMonitor monitor) throws Exception;
+
+	/**
+	 * Gets the masks the job is working on.
+	 *
+	 * @return the masks
+	 */
+	public Iterable<String> getMasks();
 }
