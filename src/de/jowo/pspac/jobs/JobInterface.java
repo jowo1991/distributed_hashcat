@@ -2,19 +2,20 @@ package de.jowo.pspac.jobs;
 
 import java.io.Serializable;
 
-import de.jowo.pspac.remote.ProgressMonitor;
+import de.jowo.pspac.remote.ProgressReporter;
 
 /**
- * Marker interface for Jobs.
+ * Interface for all Jobs that will be executed on the <b>worker nodes</b>.
  */
 public interface JobInterface extends Serializable {
 	/**
-	 * Executes the job. Can take a long while.
-	 * @param monitor
+	 * Executes the job; can take a long while.<br>
+	 * The progress is reported to the <b>master</b> using the given {@code reporter}.
+	 * @param reporter
 	 * @return {@code null} to indicate the final result was <b>not</b> found, {@code true} / {@code Object} otherwise.
 	 * @throws Exception
 	 */
-	public Serializable call(ProgressMonitor monitor) throws Exception;
+	public Serializable call(ProgressReporter reporter) throws Exception;
 
 	/**
 	 * Gets the masks the job is working on.

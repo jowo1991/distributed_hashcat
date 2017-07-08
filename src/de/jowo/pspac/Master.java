@@ -24,6 +24,8 @@ import de.jowo.pspac.exceptions.RegistrationFailedException;
 import de.jowo.pspac.jmx.MasterMXBean;
 import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.MasterInterface;
+import de.jowo.pspac.remote.ProgressMonitor;
+import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.WorkerInterface;
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
@@ -39,7 +41,7 @@ public class Master implements MasterInterface, MasterMXBean {
 	private boolean acceptWorkers = true;
 
 	private Queue<String> maskfileQueue;
-	private List<LoggingProgressMonitor> monitors = Collections.synchronizedList(new ArrayList<>());
+	private List<ProgressMonitor> monitors = Collections.synchronizedList(new ArrayList<>());
 
 	private List<String> maskfileRows;
 
@@ -63,11 +65,12 @@ public class Master implements MasterInterface, MasterMXBean {
 		startExecutionManually = System.getProperty("startmanually") != null;
 
 		if (factoryClass == null || factoryClass.equals("")) {
-			throw new IllegalArgumentException("factory is mandatory");
+			throw new IllegalArgumentException("'factory' is mandatory");
 		} else {
 			try {
 				factoryClass = "de.jowo.pspac.factories." + factoryClass;
 				factory = (AbstractFactory) Class.forName(factoryClass).newInstance();
+				logger.info("Successfully created factory: '" + factory.getClass().getName() + "'");
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
 				String error = String.format("Unable to instantiate factory '%s'", factoryClass);
 				logger.fatal(error, e);
@@ -128,11 +131,13 @@ public class Master implements MasterInterface, MasterMXBean {
 	}
 
 	private void startDispatcherThread(final long workerId, final WorkerInterface worker) throws RemoteException {
-		final LoggingProgressMonitor monitor = new LoggingProgressMonitor(workerId);
-		UnicastRemoteObject.exportObject(monitor, 0);
+		final ProgressMonitor monitor = factory.createMonitor(workerId);
+		final ProgressReporter reporter = factory.createReporter(workerId);
+
+		UnicastRemoteObject.exportObject(reporter, 0);
 
 		// Create Monitoring-Thread
-		final Thread t = new MonitorThread(workerId, monitor, worker);
+		final Thread t = new MonitorThread(workerId, monitor, reporter, worker);
 
 		monitor.setThread(t);
 		monitors.add(monitor);
@@ -142,7 +147,7 @@ public class Master implements MasterInterface, MasterMXBean {
 
 	private void interruptOtherWorkers() {
 		synchronized (monitors) {
-			for (LoggingProgressMonitor monitor : monitors) {
+			for (ProgressMonitor monitor : monitors) {
 				if (monitor.getThread() != Thread.currentThread()) {
 					monitor.getThread().interrupt();
 				}
@@ -151,15 +156,16 @@ public class Master implements MasterInterface, MasterMXBean {
 	}
 
 	private class MonitorThread extends Thread {
-
-		final LoggingProgressMonitor monitor;
+		final ProgressMonitor monitor;
+		final ProgressReporter reporter;
 		final WorkerInterface worker;
 		final long workerId;
 
-		public MonitorThread(long workerId, LoggingProgressMonitor monitor, WorkerInterface worker) {
+		public MonitorThread(long workerId, ProgressMonitor monitor, ProgressReporter reporter, WorkerInterface worker) {
 			super("Monitor-" + workerId);
 
 			this.monitor = monitor;
+			this.reporter = reporter;
 			this.workerId = workerId;
 			this.worker = worker;
 		}
@@ -196,7 +202,7 @@ public class Master implements MasterInterface, MasterMXBean {
 
 				try {
 					logger.info("Submitting job '" + job + "' with worker " + workerId);
-					worker.submitJob(job, monitor);
+					worker.submitJob(job, reporter);
 
 					ProgressInfo lastProgress = monitor.waitForWorker();
 					Serializable jobResult = getJobResult(lastProgress);

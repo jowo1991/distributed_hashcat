@@ -26,7 +26,7 @@ public interface WorkerInterface extends Remote {
 	 * @throws RemoteException the remote exception
 	 * @throws NodeBusyException the node is busy executing a job that hasn't finished yet
 	 */
-	public JobControl submitJob(JobInterface job, ProgressMonitor monitor) throws RemoteException, NodeBusyException;
+	public JobControl submitJob(JobInterface job, ProgressReporter monitor) throws RemoteException, NodeBusyException;
 
 	/**
 	 * Terminates the worker node.

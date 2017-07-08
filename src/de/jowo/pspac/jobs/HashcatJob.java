@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
 import de.jowo.pspac.LoggingProgressMonitor;
-import de.jowo.pspac.remote.ProgressMonitor;
+import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
 public class HashcatJob implements JobInterface {
@@ -165,7 +165,7 @@ public class HashcatJob implements JobInterface {
 	}
 
 	@Override
-	public Serializable call(ProgressMonitor monitor) throws Exception {
+	public Serializable call(ProgressReporter reporter) throws Exception {
 		logger.info("Executing: '" + getCommand() + "'");
 		final Process process = Runtime.getRuntime().exec(getCommand());
 		final BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -175,7 +175,7 @@ public class HashcatJob implements JobInterface {
 			HashcatJobStatus res;
 			while ((res = parse(stdOut)) != null) {
 				logger.debug("Status: " + res);
-				monitor.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
+				reporter.reportProgress(ProgressInfo.active(res.getProgressPercentage(), res.toString()));
 			}
 
 			int code = process.waitFor();

@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 import de.jowo.pspac.exceptions.NodeBusyException;
 import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.JobControl;
-import de.jowo.pspac.remote.ProgressMonitor;
+import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.WorkerInterface;
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
@@ -30,7 +30,7 @@ public class Worker implements WorkerInterface {
 	final AtomicLong totalJobDuration = new AtomicLong();
 
 	@Override
-	public JobControl submitJob(JobInterface job, ProgressMonitor monitor) throws RemoteException, NodeBusyException {
+	public JobControl submitJob(JobInterface job, ProgressReporter monitor) throws RemoteException, NodeBusyException {
 		logger.debug("submitJob(" + job + ")");
 
 		jobCounter.incrementAndGet();
