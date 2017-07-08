@@ -51,12 +51,14 @@ public class Worker implements WorkerInterface {
 				} catch (RemoteException ex) {
 					logger.error("Failed to report finished execution to Master: " + finishedProgress);
 				}
+			} catch (RemoteException re) {
+				handleRemotException(re);
 			} catch (Exception err) {
 				logger.error("Job execution failed", err);
 				try {
 					monitor.reportProgress(ProgressInfo.exception(err));
-				} catch (RemoteException e) {
-					logger.error("Failed to report Exception to Master", err);
+				} catch (RemoteException re) {
+					handleRemotException(re);
 				}
 			}
 		});
@@ -64,10 +66,12 @@ public class Worker implements WorkerInterface {
 		return null;
 	}
 
-	@Override
-	public void terminate() throws RemoteException {
-		logger.info("Master called node to terminate. Terminating.");
+	private void handleRemotException(RemoteException re) {
+		logger.error("Lost connection to Master. Terminating worker.");
+		doTerminate();
+	}
 
+	private void doTerminate() {
 		long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
 		logger.info("#id = " + workerId);
 		logger.info("#Total worker runtime: " + Utils.convertMilliSecondToHHMMSSString(uptime));
@@ -83,6 +87,13 @@ public class Worker implements WorkerInterface {
 			}
 			Runtime.getRuntime().exit(0);
 		});
+	}
+
+	@Override
+	public void terminate() {
+		logger.info("Master called node to terminate. Terminating.");
+
+		doTerminate();
 	}
 
 	public void setWorkerId(long workerId) {
