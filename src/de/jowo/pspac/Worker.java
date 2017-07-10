@@ -15,6 +15,7 @@ import de.jowo.pspac.remote.JobControl;
 import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.WorkerInterface;
 import de.jowo.pspac.remote.dto.ProgressInfo;
+import de.jowo.pspac.util.Utils;
 
 /**
  * The implementation of the Worker.

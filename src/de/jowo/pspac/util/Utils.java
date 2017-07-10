@@ -1,4 +1,4 @@
-package de.jowo.pspac;
+package de.jowo.pspac.util;
 
 import java.time.LocalTime;
 
