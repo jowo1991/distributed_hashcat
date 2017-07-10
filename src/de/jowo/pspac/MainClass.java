@@ -111,6 +111,10 @@ public class MainClass {
 	}
 
 	private static void initLogger(Path filePath) {
+		if (System.getProperty("log4j.configuration") != null) {
+			return;
+		}
+
 		if (filePath.toFile().exists()) {
 			filePath.toFile().delete();
 		}
