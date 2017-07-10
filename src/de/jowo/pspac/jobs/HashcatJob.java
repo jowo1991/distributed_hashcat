@@ -42,7 +42,7 @@ public class HashcatJob implements JobInterface {
 	}
 
 	private String getCommand() {
-		String arguments = args.replace("{mask}", mask).replace("{hash}", hash);
+		String arguments = args.replace("{mask}", "\"" + mask + "\"").replace("{hash}", "\"" + hash + "\"");
 
 		String command = "{cmd} {arguments} -a 3 --status --status-timer 2 --potfile-disable";
 		command = command.replace("{cmd}", System.getProperty("hashcat", "hashcat64"));

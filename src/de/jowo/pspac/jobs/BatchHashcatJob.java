@@ -70,7 +70,7 @@ public class BatchHashcatJob implements JobInterface {
 	}
 
 	private String getCommand(Path maskfile) {
-		String command = "{cmd} {hash} {maskfile} {args} -a 3 --status --status-timer 2 --potfile-disable";
+		String command = "{cmd} \"{hash}\" \"{maskfile}\" {args} -a 3 --status --status-timer 2 --potfile-disable";
 		command = command.replace("{cmd}", System.getProperty("hashcat", "hashcat64"));
 		command = command.replace("{hash}", hash);
 		command = command.replace("{maskfile}", maskfile.toString());
