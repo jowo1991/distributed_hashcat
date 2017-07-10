@@ -23,25 +23,51 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
 import de.jowo.pspac.exceptions.RegistrationFailedException;
+import de.jowo.pspac.factories.BatchMaskFactory;
+import de.jowo.pspac.factories.DemoFactory;
+import de.jowo.pspac.factories.SingleMaskFactory;
 import de.jowo.pspac.remote.MasterInterface;
 
 /**
  * Entry point for the computation.<br>
- * The following properties are used depending on the mode:
+ * 
+ * <h1>Properties for the worker:</h1>
  * <ul>
- * <li>mode - Either 'master' or 'worker' (DEFAULT = worker)</li>
- * <li>masterhost - Master to register the worker with. Only relevant if mode = 'worker'</li>
- * <li>masterport - The port to connect to the master or setup the master depending on the mode (DEFAULT = 2000)</li>
+ * <li>mode - The mode to be used, here: 'worker' (DEFAULT = worker) - optional</li>
+ * <li>masterhost - Hostname of the 'master' to register the worker with, e.g. 'faui003' - <b>mandatory</b></li>
+ * <li>masterport - The port to connect to the master or setup the master depending on the mode (DEFAULT = 2000) - optional</li>
+ * <li>LOG_DIR - The path for all log files, e.g. "/tmp/pspac_logs" (DEFAULT = java.io.tmpdir) - optional</li>
+ * </ul>
+ * 
+ * <h1>Properties for the master:</h1>
+ * 
+ * <h2>Independent of the factory:</h2>
+ * <ul>
+ * <li>mode - The mode to be used, here: 'master' - <b>mandatory</b></li>
+ * <li>maskfile - The path to the maskfile to be used for hash breaking - <b>mandatory</b></li>
  * <li>LOG_DIR - The path for all log files, e.g. "/tmp/pspac_logs" (DEFAULT = java.io.tmpdir)</li>
  * </ul>
  * 
- * Only for the master:
+ * <h2>Using {@link SingleMaskFactory}</h2>
  * <ul>
+ * <li>factory = SingleMaskFactory</li>
  * <li>hash - The hash to be broken, e.g. "098f6bcd4621d373cade4e832627b4f6" - <b>mandatory</b></li>
- * <li>hashcatargs - The arguments to pass to hashcat, e.g. "-m 0 -a 3 {hash} {mask} -D 2" - <b>mandatory</b></li>
+ * <li>hashcatargs - The arguments to pass to hashcat, e.g. "-m 0 {hash} {mask} -D 2" - <b>mandatory</b></li>
  * </ul>
  * 
- * @author Jo
+ * <h2>Using {@link BatchMaskFactory}</h2>
+ * <ul>
+ * <li>factory = BatchMaskFactory</li>
+ * <li>hash - The hash to be broken, e.g. "098f6bcd4621d373cade4e832627b4f6" - <b>mandatory</b></li>
+ * <li>hashcatargs - The hash function to be used, e.g. "-m 0" - <b>mandatory</b></li>
+ * <li>batchsize - The batch size - optional (DEFAULT = 10)</li>
+ * </ul>
+ * 
+ * <h2>Using {@link DemoFactory}</h2>
+ * <ul>
+ * <li>delayMillis - The delay between each simulated mask - optional(DEFAULT = 100)</li>
+ * <li>batchsize - The batch size - optional (DEFAULT = 10)</li>
+ * </ul>
  */
 public class MainClass {
 	private static final Logger logger = Logger.getLogger(MainClass.class);

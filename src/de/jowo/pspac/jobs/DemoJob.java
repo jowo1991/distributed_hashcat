@@ -1,7 +1,7 @@
 package de.jowo.pspac.jobs;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.log4j.Logger;
 
@@ -12,18 +12,25 @@ public class DemoJob implements JobInterface {
 	private static final long serialVersionUID = 4759550327769714923L;
 	private final static Logger logger = Logger.getLogger(DemoJob.class);
 
-	private final String mask;
+	private final Collection<String> masks;
+	private final int delayMillis;
 
-	public DemoJob(String mask) {
-		this.mask = mask;
+	public DemoJob(Collection<String> masks, int delayMillis) {
+		this.masks = masks;
+		this.delayMillis = delayMillis;
 	}
 
 	@Override
 	public Serializable call(ProgressReporter reporter) throws Exception {
-		for (int i = 1; i <= 5; i++) {
-			Thread.sleep(100);
-			logger.info("Progress: i = " + i + " for job = DemoJob");
-			reporter.reportProgress(ProgressInfo.active(i * 10, "i = " + i));
+		int i = 1;
+		for (String mask : masks) {
+			Thread.sleep(delayMillis);
+			logger.info("Progress: mask = " + mask + " for job = DemoJob");
+
+			int progress = (int) ((double) i / masks.size() * 100);
+			reporter.reportProgress(ProgressInfo.active(progress, "i = " + i));
+
+			i++;
 		}
 
 		// There is no "final" result, so always return null.
@@ -32,11 +39,11 @@ public class DemoJob implements JobInterface {
 
 	@Override
 	public Iterable<String> getMasks() {
-		return Arrays.asList(mask);
+		return masks;
 	}
 
 	@Override
 	public String toString() {
-		return "DemoJob [mask=" + mask + "]";
+		return "DemoJob [masks=" + masks + "]";
 	}
 }

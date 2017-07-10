@@ -38,6 +38,8 @@ public class BatchMaskFactory extends AbstractFactory {
 		if (hash == null) {
 			throw new IllegalStateException("'hash' is mandatory.");
 		}
+
+		BatchHashcatJob.validateArgsOrThrow(hashcatArguments);
 	}
 
 	@Override

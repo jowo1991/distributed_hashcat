@@ -33,6 +33,8 @@ public class SingleMaskFactory extends AbstractFactory {
 		if (hash == null) {
 			throw new IllegalStateException("'hash' is mandatory.");
 		}
+
+		HashcatJob.validateArgsOrThrow(hashcatArguments);
 	}
 
 	@Override
