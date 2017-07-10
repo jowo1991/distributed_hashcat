@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import de.jowo.pspac.LoggingProgressMonitor;
@@ -22,6 +23,7 @@ public class BatchHashcatJob implements JobInterface {
 	private static final Logger logger = Logger.getLogger(BatchHashcatJob.class);
 
 	private static final String MASK_FILENAME = "maskfile";
+	private static final String HASH_FILENAME = "hashfile";
 	private static final Path TMP_PATH = Paths.get(System.getProperty("TMP", System.getProperty("java.io.tmpdir")));
 
 	final String hash;
@@ -51,15 +53,16 @@ public class BatchHashcatJob implements JobInterface {
 	}
 
 	public static void main(String[] args) throws Exception {
-		// Logger.getLogger(HashcatParser.class).setLevel(Level.ALL);
+		Logger.getLogger(HashcatParser.class).setLevel(Level.ALL);
 
-		// String arg = "-m 0";
+		String arg = "-m 0 -D 1";
 		// String hash = "04cf6ab42833951e9f86598d1213ef3e"; // Sstupid
 		// String hash = "098f6bcd4621d373cade4e832627b4f6"; // test
-		// String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
+		String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
 
-		String arg = "-m 9500 --username";
-		String hash = "Secure.xlsx:$office$*2010*100000*128*16*78cc471d2df7bb0b61380aa0d6372486*911393d3df3d753d62ea673a15c591d7*4cc1997d054804732e8355a32b9202cfc1256e081423ad13e1d4fe184bf35b91";
+		// String arg = "-m 9500 --username";
+		// String hash =
+		// "Secure.xlsx:$office$*2010*100000*128*16*78cc471d2df7bb0b61380aa0d6372486*911393d3df3d753d62ea673a15c591d7*4cc1997d054804732e8355a32b9202cfc1256e081423ad13e1d4fe184bf35b91";
 
 		Iterable<String> masks = Arrays.asList("?d", "?d?d", "?l", "?d?d?d?d", "?d?d?d?d?d?d", "?d?d?d?d?d", "?l?l", "?d?d?d", "?u", "?s", "?l?l?l?l");
 
@@ -69,10 +72,10 @@ public class BatchHashcatJob implements JobInterface {
 		logger.info("Final result = " + String.valueOf(result));
 	}
 
-	private String getCommand(Path maskfile) {
+	private String getCommand(Path maskfile, Path hashfile) {
 		String command = "{cmd} \"{hash}\" \"{maskfile}\" {args} -a 3 --status --status-timer 2 --potfile-disable";
 		command = command.replace("{cmd}", System.getProperty("hashcat", "hashcat64"));
-		command = command.replace("{hash}", hash);
+		command = command.replace("{hash}", hashfile.toString());
 		command = command.replace("{maskfile}", maskfile.toString());
 		command = command.replace("{args}", args);
 
@@ -89,18 +92,30 @@ public class BatchHashcatJob implements JobInterface {
 		if (maskfile.toFile().exists()) {
 			maskfile.toFile().delete();
 		}
-
 		Files.write(maskfile, masks, Charset.defaultCharset(), StandardOpenOption.CREATE_NEW);
 
 		return maskfile;
 	}
 
+	private Path writeHashfile() throws IOException {
+		Path hashfile = TMP_PATH.resolve(HASH_FILENAME);
+		if (hashfile.toFile().exists()) {
+			hashfile.toFile().delete();
+		}
+		Files.write(hashfile, Arrays.asList(hash), Charset.defaultCharset(), StandardOpenOption.CREATE_NEW);
+
+		return hashfile;
+	}
+
 	@Override
 	public Serializable call(ProgressReporter reporter) throws Exception {
 		Path maskfile = writeMaskfile();
+		Path hashfile = writeHashfile();
 
-		logger.info("Executing: '" + getCommand(maskfile) + "'");
-		final Process process = Runtime.getRuntime().exec(getCommand(maskfile));
+		String command = getCommand(maskfile, hashfile);
+		logger.info("Executing: '" + command + "'");
+
+		final Process process = Runtime.getRuntime().exec(command);
 		final BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
 		final HashcatParser parser = new HashcatParser(hash);
