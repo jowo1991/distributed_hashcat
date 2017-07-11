@@ -87,30 +87,23 @@ public class BatchHashcatJob implements JobInterface {
 		return "BatchHashcatJob [hash=" + hash + ", masks=" + masks + ", optArgs=" + args + "]";
 	}
 
-	private Path writeMaskfile() throws IOException {
-		Path maskfile = TMP_PATH.resolve(MASK_FILENAME);
-		if (maskfile.toFile().exists()) {
-			maskfile.toFile().delete();
+	private Path writeContentToFile(String filename, Iterable<String> lines) throws IOException {
+		Path file = TMP_PATH.resolve(filename);
+		if (file.toFile().exists()) {
+			file.toFile().delete();
 		}
-		Files.write(maskfile, masks, Charset.defaultCharset(), StandardOpenOption.CREATE_NEW);
+		Files.write(file, lines, Charset.defaultCharset(), StandardOpenOption.CREATE_NEW);
 
-		return maskfile;
-	}
-
-	private Path writeHashfile() throws IOException {
-		Path hashfile = TMP_PATH.resolve(HASH_FILENAME);
-		if (hashfile.toFile().exists()) {
-			hashfile.toFile().delete();
-		}
-		Files.write(hashfile, Arrays.asList(hash), Charset.defaultCharset(), StandardOpenOption.CREATE_NEW);
-
-		return hashfile;
+		return file;
 	}
 
 	@Override
 	public Serializable call(ProgressReporter reporter) throws Exception {
-		Path maskfile = writeMaskfile();
-		Path hashfile = writeHashfile();
+		Path maskfile = writeContentToFile(MASK_FILENAME, masks);
+		Path hashfile = writeContentToFile(HASH_FILENAME, Arrays.asList(hash));
+
+		logger.debug("maskfile: " + Files.readAllLines(maskfile));
+		logger.debug("hashfile: " + Files.readAllLines(hashfile));
 
 		String command = getCommand(maskfile, hashfile);
 		logger.info("Executing: '" + command + "'");
