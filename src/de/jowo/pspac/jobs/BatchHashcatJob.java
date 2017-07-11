@@ -73,9 +73,9 @@ public class BatchHashcatJob implements JobInterface {
 	}
 
 	private String getCommand(Path maskfile, Path hashfile) {
-		String command = "{cmd} \"{hash}\" \"{maskfile}\" {args} -a 3 --status --status-timer 2 --potfile-disable";
+		String command = "{cmd} {hashfile} {maskfile} {args} -a 3 --status --status-timer 2 --potfile-disable";
 		command = command.replace("{cmd}", System.getProperty("hashcat", "hashcat64"));
-		command = command.replace("{hash}", hashfile.toString());
+		command = command.replace("{hashfile}", hashfile.toString());
 		command = command.replace("{maskfile}", maskfile.toString());
 		command = command.replace("{args}", args);
 
@@ -102,8 +102,8 @@ public class BatchHashcatJob implements JobInterface {
 		Path maskfile = writeContentToFile(MASK_FILENAME, masks);
 		Path hashfile = writeContentToFile(HASH_FILENAME, Arrays.asList(hash));
 
-		logger.debug("maskfile: " + Files.readAllLines(maskfile));
-		logger.debug("hashfile: " + Files.readAllLines(hashfile));
+		logger.debug(String.format("%s = %s: ", maskfile, Files.readAllLines(maskfile)));
+		logger.debug(String.format("%s = %s: ", hashfile, Files.readAllLines(hashfile)));
 
 		String command = getCommand(maskfile, hashfile);
 		logger.info("Executing: '" + command + "'");
