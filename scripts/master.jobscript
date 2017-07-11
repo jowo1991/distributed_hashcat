@@ -1,0 +1,65 @@
+#!/bin/bash
+
+#resource needed. 1 node with 32 processes allocated
+#PBS -l nodes=1:ppn=8
+
+#set walltime needed. In general, lower the time, faster the access.
+#PBS -l walltime=03:00:00
+
+#PBS -e /home/hpc/rzku/pacl022h/logs/out
+#PBS -o /home/hpc/rzku/pacl022h/logs/err
+
+##send a mail(m) at begin(b) and end of job(e)
+##PBS -M jonathan.wolf@fau.de -m abe
+
+##give job name
+##PBS -N jwol-project
+
+NODES=$(cat $PBS_NODEFILE | uniq)
+MASTER_HOST=$(hostname)
+LOG_DIR=/home/hpc/rzku/pacl022h/logs
+
+PATH=$PATH:/home/hpc/rzku/pacl022h/project/jre1.8.0_131/bin
+PATH=$PATH:/home/hpc/rzku/pacl022h/project/hashcat-3.5.0
+
+MASKFILE="/home/hpc/rzku/pacl022h/project/maskfile"
+
+#FACTORY="SingleMaskFactory"
+#ARGS="-m 0 -a 3 {hash} {mask}"
+#1tet22
+#HASH="0e331ffeb38c6395251671cdbeca828a"
+#OPT=""
+
+FACTORY="BatchMaskFactory"
+#ARGS="-m 0"
+ARGS="--username -m 9500"
+HASH=$(cat ~/project/hash)
+OPT="-Dbatchsize=5"
+
+JMX="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+
+echo "starting master"
+java $JMX -DLOG_DIR=$LOG_DIR -Dmode=master -Dfactory=$FACTORY -Dhash="$HASH" -Dhashcatargs="$ARGS" -Dmaskfile="$MASKFILE" $OPT -jar ~/project/pspac.jar > /dev/null 2> /dev/null &
+
+echo "give the master 5s to start"
+sleep 5
+
+echo $MASTER_HOST > $LOG_DIR/master
+
+echo "starting worker"
+#DEBUG_LOGGING="-Dlog4j.debug=1 -Dlog4j.configuration=log4j-debug.properties"
+java $DEBUG_LOGGING -DLOG_DIR=$LOG_DIR -Dmode=worker -Dmasterhost=$MASTER_HOST -jar ~/project/pspac.jar &
+
+
+# wait for both processes to terminate
+wait
+
+echo "Jobscript terminating"
+rm $LOG_DIR/master
+
+
+#echo "copying files"
+#scp /tmp/*file ~
+
+#echo "sleeping for 500"
+#sleep 500

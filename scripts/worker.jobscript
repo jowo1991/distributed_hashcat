@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#resource needed. 1 node with 32 processes allocated
+#PBS -l nodes=1:ppn=8
+
+#set walltime needed. In general, lower the time, faster the access.
+#PBS -l walltime=03:00:00
+
+
+##PBS -e /home/hpc/rzku/pacl022h/logs/out
+##PBS -o /home/hpc/rzku/pacl022h/logs/err
+
+#send a mail(m) at begin(b) and end of job(e)
+##PBS -M jonathan.wolf@fau.de -m abe
+
+#give job name
+##PBS -N jwol-project
+
+LOG_DIR=/home/hpc/rzku/pacl022h/logs
+MASTER_HOST=$(cat $LOG_DIR/master)
+
+PATH=$PATH:/home/hpc/rzku/pacl022h/project/jre1.8.0_131/bin
+PATH=$PATH:/home/hpc/rzku/pacl022h/project/hashcat-3.5.0
+
+echo "starting worker with master $MASTER_HOST"
+java -DLOG_DIR=$LOG_DIR -Dmode=worker -Dmasterhost=$MASTER_HOST -jar ~/project/pspac.jar > /dev/null 2> /dev/null &
+
+
+# wait for both processes to terminate
+wait
+
+echo "Jobscript terminating"
