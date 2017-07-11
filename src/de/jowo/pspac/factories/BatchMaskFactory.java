@@ -7,7 +7,6 @@ import java.util.Queue;
 import org.apache.log4j.Logger;
 
 import de.jowo.pspac.AbstractFactory;
-import de.jowo.pspac.LoggingProgressMonitor;
 import de.jowo.pspac.jobs.BatchHashcatJob;
 import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.ProgressMonitor;
@@ -19,8 +18,6 @@ public class BatchMaskFactory extends AbstractFactory {
 	private final String hashcatArguments;
 	private final String hash;
 	private final int batchSize;
-
-	private LoggingProgressMonitor monitor = null;
 
 	public BatchMaskFactory() {
 		hashcatArguments = System.getProperty("hashcatargs");
@@ -53,13 +50,6 @@ public class BatchMaskFactory extends AbstractFactory {
 		}
 
 		return new BatchHashcatJob(hash, masks, hashcatArguments);
-	}
-
-	private LoggingProgressMonitor getMonitorReporter(long workerId) {
-		if (monitor == null) {
-			monitor = new LoggingProgressMonitor(workerId);
-		}
-		return monitor;
 	}
 
 	@Override

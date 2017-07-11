@@ -7,7 +7,6 @@ import java.util.Queue;
 import org.apache.log4j.Logger;
 
 import de.jowo.pspac.AbstractFactory;
-import de.jowo.pspac.LoggingProgressMonitor;
 import de.jowo.pspac.jobs.DemoJob;
 import de.jowo.pspac.jobs.JobInterface;
 import de.jowo.pspac.remote.ProgressMonitor;
@@ -15,7 +14,6 @@ import de.jowo.pspac.remote.ProgressReporter;
 
 public class DemoFactory extends AbstractFactory {
 	private static final Logger logger = Logger.getLogger(DemoFactory.class);
-	private LoggingProgressMonitor monitor = null;
 
 	private final int delayMillis;
 	private final int batchSize;
@@ -39,13 +37,6 @@ public class DemoFactory extends AbstractFactory {
 		}
 
 		return new DemoJob(masks, delayMillis);
-	}
-
-	private LoggingProgressMonitor getMonitorReporter(long workerId) {
-		if (monitor == null) {
-			monitor = new LoggingProgressMonitor(workerId);
-		}
-		return monitor;
 	}
 
 	@Override
