@@ -11,10 +11,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import de.jowo.pspac.LoggingProgressMonitor;
 import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
@@ -50,26 +48,6 @@ public class BatchHashcatJob implements JobInterface {
 		}
 
 		return args;
-	}
-
-	public static void main(String[] args) throws Exception {
-		Logger.getLogger(HashcatParser.class).setLevel(Level.ALL);
-
-		String arg = "-m 0 -D 1";
-		// String hash = "04cf6ab42833951e9f86598d1213ef3e"; // Sstupid
-		// String hash = "098f6bcd4621d373cade4e832627b4f6"; // test
-		String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
-
-		// String arg = "-m 9500 --username";
-		// String hash =
-		// "Secure.xlsx:$office$*2010*100000*128*16*78cc471d2df7bb0b61380aa0d6372486*911393d3df3d753d62ea673a15c591d7*4cc1997d054804732e8355a32b9202cfc1256e081423ad13e1d4fe184bf35b91";
-
-		Iterable<String> masks = Arrays.asList("?d", "?d?d", "?l", "?d?d?d?d", "?d?d?d?d?d?d", "?d?d?d?d?d", "?l?l", "?d?d?d", "?u", "?s", "?l?l?l?l");
-
-		BatchHashcatJob hashcatJob = new BatchHashcatJob(hash, masks, arg);
-		Object result = hashcatJob.call(new LoggingProgressMonitor(1L));
-
-		logger.info("Final result = " + String.valueOf(result));
 	}
 
 	private String getCommand(Path maskfile, Path hashfile) {
@@ -126,6 +104,10 @@ public class BatchHashcatJob implements JobInterface {
 
 			if (code < 0 || code > 1) {
 				throw new IllegalStateException("Illegal exit code: " + code);
+			}
+
+			if (code == 0 && parser.getResult() == null) {
+				return HASH_CRACKED_BUT_NOT_CAPTURED;
 			}
 
 			return parser.getResult();

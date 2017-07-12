@@ -6,6 +6,8 @@ public class HashcatJobStatus {
 	private String timeEstimated;
 	private String speedDev;
 	private int progressPercentage;
+	private String guessMask;
+	private String guessQueue;
 
 	public String getTimeStarted() {
 		return timeStarted;
@@ -47,9 +49,26 @@ public class HashcatJobStatus {
 		this.progressPercentage = progressPercentage;
 	}
 
+	public String getGuessMask() {
+		return guessMask;
+	}
+
+	public void setGuessMask(String guessMask) {
+		this.guessMask = guessMask;
+	}
+
+	public String getGuessQueue() {
+		return guessQueue;
+	}
+
+	public void setGuessQueue(String guessQueue) {
+		this.guessQueue = guessQueue;
+	}
+
 	@Override
 	public String toString() {
-		return "HashcatJobResult [progress=" + progress + ", timeStarted=" + timeStarted + ", timeEstimated=" + timeEstimated + ", speedDev=" + speedDev
-				+ ", progressPercentage=" + progressPercentage + "]";
+		return "HashcatJobStatus [" + "guessMask=" + guessMask + ", guessQueue=" + guessQueue + ", progress=" + progress + ", timeStarted=" + timeStarted
+				+ ", timeEstimated=" + timeEstimated + ", speedDev=" + speedDev + ", progressPercentage=" + progressPercentage + "]";
 	}
+
 }

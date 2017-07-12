@@ -16,17 +16,15 @@ public class HashcatParser {
 	static final Pattern TIME_STARTED = Pattern.compile("Time.Started\\.*: (.*)");
 	static final Pattern TIME_ESTIMATED = Pattern.compile("Time.Estimated\\.*: (.*)");
 	static final Pattern SPEED_DEV = Pattern.compile("Speed.Dev.#.\\.*: *(\\d+.*)");
+	static final Pattern GUESS_MASK = Pattern.compile("Guess.Mask\\.*: (.*)");
+	static final Pattern GUESS_QUEUE = Pattern.compile("Guess.Queue\\.*: (.*)");
 
-	/**
-	 * Hashcat outputs the result in the form "{hash}:{text}".<br>
-	 * Therefore the regex is: "<b>hash:(.*)</b>"
-	 */
-	private final Pattern resultPattern;
+	private final String hash;
 
 	private String result;
 
 	public HashcatParser(String hash) {
-		this.resultPattern = Pattern.compile(hash + ":(.*)");
+		this.hash = hash;
 	}
 
 	/**
@@ -39,8 +37,8 @@ public class HashcatParser {
 	 * 	Hash.Target......: 04cf6ab42833951e9f86598d1213ef3e
 	 * 	Time.Started.....: Tue Jul 04 15:29:18 2017 (1 min, 10 secs)
 	 * 	Time.Estimated...: Tue Jul 04 15:34:26 2017 (3 mins, 58 secs)
-	 * 	Guess.Mask.......: ?u?u?u?u?u?u?u?u [8]
-	 * 	Guess.Queue......: 1/1 (100.00%)
+	 *  Guess.Mask.......: ?l?l?l?l?d?d?d [7]
+	 *  Guess.Queue......: 4/4 (100.00%)
 	 * 	Speed.Dev.#3.....:   676.7 MH/s (11.14ms)
 	 * 	Recovered........: 0/1 (0.00%) Digests, 0/1 (0.00%) Salts
 	 * 	Progress.........: 47681863680/208827064576 (22.83%)
@@ -74,9 +72,8 @@ public class HashcatParser {
 				return res;
 			}
 
-			matcher = resultPattern.matcher(s);
-			if (matcher.find()) {
-				result = matcher.group();
+			if (s.contains(hash + ":")) {
+				result = s;
 				return null;
 			}
 
@@ -104,6 +101,16 @@ public class HashcatParser {
 				matcher = PROGRESS_PERCENTAGE.matcher(s);
 				if (matcher.find()) {
 					res.setProgressPercentage(Integer.parseInt(matcher.group(1)));
+				}
+
+				matcher = GUESS_MASK.matcher(s);
+				if (matcher.find()) {
+					res.setGuessMask(matcher.group(1));
+				}
+
+				matcher = GUESS_QUEUE.matcher(s);
+				if (matcher.find()) {
+					res.setGuessQueue(matcher.group(1));
 				}
 			}
 		}

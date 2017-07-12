@@ -8,6 +8,8 @@ import de.jowo.pspac.remote.ProgressReporter;
  * Interface for all Jobs that will be executed on the <b>worker nodes</b>.
  */
 public interface JobInterface extends Serializable {
+	public static final String HASH_CRACKED_BUT_NOT_CAPTURED = "Hash cracked but not captured. Please read logs! This only happens when using '--username'";
+
 	/**
 	 * Executes the job; can take a long while.<br>
 	 * The progress is reported to the <b>master</b> using the given {@code reporter}.

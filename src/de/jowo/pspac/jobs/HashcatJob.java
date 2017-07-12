@@ -7,7 +7,6 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import de.jowo.pspac.LoggingProgressMonitor;
 import de.jowo.pspac.remote.ProgressReporter;
 import de.jowo.pspac.remote.dto.ProgressInfo;
 
@@ -53,19 +52,7 @@ public class HashcatJob implements JobInterface {
 
 	@Override
 	public String toString() {
-		return "HashcatJob [hash=" + hash + ", mask=" + mask + "]";
-	}
-
-	public static void main(String[] args) throws Exception {
-		String arg = "-m 0 -a 3 {hash} {mask} -D 2";
-		// String hash = "04cf6ab42833951e9f86598d1213ef3e"; // Sstupid
-		String hash = "098f6bcd4621d373cade4e832627b4f6"; // test
-		// String hash = "74db53da6e2e7d75be37fdd2a7d27828"; // testttttt
-
-		HashcatJob hashcatJob = new HashcatJob(hash, "?l?l?l?l?l?l?l", arg);
-		Object result = hashcatJob.call(new LoggingProgressMonitor(2L));
-
-		logger.info("Final result = " + String.valueOf(result));
+		return "HashcatJob [hash=" + hash + ", mask=" + mask + ", args=" + args + "]";
 	}
 
 	@Override
@@ -89,6 +76,10 @@ public class HashcatJob implements JobInterface {
 
 			if (code < 0 || code > 1) {
 				throw new IllegalStateException("Illegal exit code: " + code);
+			}
+
+			if (code == 0 && parser.getResult() == null) {
+				return HASH_CRACKED_BUT_NOT_CAPTURED;
 			}
 
 			return parser.getResult();
