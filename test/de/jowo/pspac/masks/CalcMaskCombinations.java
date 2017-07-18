@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -46,9 +47,39 @@ public class CalcMaskCombinations {
 		System.out.println(String.format("%,d \t\t %s", sum, maskfile.getFileName()));
 	}
 
+	public void estimateFileCumulative(Path maskfile) {
+		List<String> lines;
+		try {
+			lines = Files.readAllLines(maskfile);
+		} catch (IOException e) {
+			System.out.println("Failed to read: " + maskfile);
+			return;
+		}
+
+		List<Long> combinationsPerLine = lines.stream().map(line -> {
+			long num = calculateCombinations(line);
+			// System.out.println(num + " - " + line);
+			return num;
+		}).collect(Collectors.toList());
+
+		long cumSum = 0;
+		long combinations;
+		for (int i = 0; i < combinationsPerLine.size(); i++) {
+			combinations = combinationsPerLine.get(i);
+			cumSum += combinations;
+
+			System.out.println(String.format("[%d] %,d \t\t %s (%,d)", i, cumSum, lines.get(i), combinations));
+		}
+	}
+
 	@Test
 	public void estimateAll() throws IOException {
 		Files.list(masksDir).forEach(this::estimateFile);
+	}
+
+	@Test
+	public void estimateCumulative() throws IOException {
+		estimateFileCumulative(masksDir.resolve("rockyou-1-60.hcmask"));
 	}
 
 	@Test
