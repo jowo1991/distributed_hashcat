@@ -68,7 +68,7 @@ public class CalcMaskCombinations {
 			combinations = combinationsPerLine.get(i);
 			cumSum += combinations;
 
-			System.out.println(String.format("[%d] %,d \t\t %s (%,d)", i, cumSum, lines.get(i), combinations));
+			System.out.println(String.format("[%d] %,d \t\t %s \t %,d", i, cumSum, lines.get(i), combinations));
 		}
 	}
 
@@ -92,7 +92,7 @@ public class CalcMaskCombinations {
 	public long calculateCombinations(String line) {
 		long num = 1;
 		for (int i = 0; i < line.length() - 1; i += 2) {
-			String mask = String.valueOf(line.charAt(i)) + String.valueOf(line.charAt(i + 1));
+			String mask = new String(new char[] { line.charAt(i), line.charAt(i + 1) });
 			num *= maskToCombinations.get(mask);
 		}
 		return num;
