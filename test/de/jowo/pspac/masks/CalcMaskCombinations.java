@@ -43,7 +43,7 @@ public class CalcMaskCombinations {
 			return num;
 		}).sum();
 
-		System.out.println(String.format("%,d \t\t %s", sum, maskfile));
+		System.out.println(String.format("%,d \t\t %s", sum, maskfile.getFileName()));
 	}
 
 	@Test
