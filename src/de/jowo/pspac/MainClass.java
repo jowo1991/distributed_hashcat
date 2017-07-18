@@ -46,6 +46,7 @@ import de.jowo.pspac.remote.MasterInterface;
  * <li>mode - The mode to be used, here: 'master' - <b>mandatory</b></li>
  * <li>maskfile - The path to the maskfile to be used for hash breaking - <b>mandatory</b></li>
  * <li>LOG_DIR - The path for all log files, e.g. "/tmp/pspac_logs" (DEFAULT = java.io.tmpdir)</li>
+ * <li>startmanually - Set to 'any' value to enable manually starting via JMX (DEFAULT = null/false)</li>
  * </ul>
  * 
  * <h2>Using {@link SingleMaskFactory}</h2>

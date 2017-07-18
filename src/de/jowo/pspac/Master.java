@@ -65,6 +65,8 @@ public class Master implements MasterInterface, MasterMXBean {
 		String factoryClass = System.getProperty("factory");
 		startExecutionManually = System.getProperty("startmanually") != null;
 
+		logger.info("startExecutionManually = '" + startExecutionManually + "'");
+
 		if (factoryClass == null || factoryClass.equals("")) {
 			throw new IllegalArgumentException("'factory' is mandatory");
 		} else {
