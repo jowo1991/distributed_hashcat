@@ -208,6 +208,7 @@ public class Master implements MasterInterface, MasterMXBean {
 					worker.submitJob(job, reporter);
 
 					ProgressInfo lastProgress = monitor.waitForWorker();
+					// This will throw an IllegalStateException when the jobResult was 'exception'
 					Serializable jobResult = getJobResult(lastProgress);
 
 					String maskProgress = String.format("(%d / %d)", workMaskIndex, maskfileRows.size());
