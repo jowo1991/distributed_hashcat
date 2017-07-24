@@ -26,6 +26,13 @@ Important parameters (pass using -D{name}):
 | startmanually | Specifies whether the job should start automatically once the first worker has registered | true | no
 | LOG_DIR | The path for all log files, e.g. "/tmp/pspac_logs" | System.getProperty("java.io.tmpdir") | no
 
+### Deployment & Build ###
+Eclipse was used for development (as obvious by the [.classpath](.classpath)).
+However you can also use:
+> ant clean dist
+
+to create a deployable jar.
+
 ## Monitoring using VisualVM ##
 The master can be monitored using VisualVM using the `de.jowo.pspac.MasterControl` as illustrated below.
 ![visualvm-1](doc/visualvm-1.jpg)
