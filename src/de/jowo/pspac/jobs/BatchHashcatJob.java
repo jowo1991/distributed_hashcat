@@ -44,7 +44,7 @@ public class BatchHashcatJob implements JobInterface {
 
 	public static String validateArgsOrThrow(String args) {
 		if (!args.contains("-m")) {
-			throw new IllegalArgumentException("Please provide the hash type using '-m <hash>'");
+			throw new IllegalArgumentException("Please provide the hash type using '-m <hashtype>'");
 		}
 
 		return args;
