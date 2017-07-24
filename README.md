@@ -13,8 +13,8 @@ Examples:
 
 | Node | Parameters | Comment
 | ------ | ------ | ------
-| Master | -Dfactory=DemoFactory -Ddelaymillis=500 -Dmode=master -Dmaskfile=<maskfile> | Run master using the demo jobs
-| Master | -Dfactory=BatchMaskFactory -Dmode=master -Dmaskfile=<maskfile> -Dhashcatargs="-m 0" -Dhash=098f6bcd4621d373cade4e832627b4f6 | Crack the given MD5 hash using batch jobs
+| Master | -Dfactory=DemoFactory -Ddelaymillis=500 -Dmode=master -Dmaskfile=*maskfile* | Run master using the demo jobs
+| Master | -Dfactory=BatchMaskFactory -Dmode=master -Dmaskfile=*maskfile* -Dhashcatargs="-m 0" -Dhash=098f6bcd4621d373cade4e832627b4f6 | Crack the given MD5 hash using batch jobs
 | Worker | -Dmode=worker -Dmasterhost=localhost | Run worker connecting to the master at "localhost". Multiple instances of this worker can be started!
 
 Important parameters (pass using -D{name}):
